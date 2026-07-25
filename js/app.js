@@ -733,7 +733,8 @@ window.reloadFromCloud = function(){
    The same words as the flashcards, played instead of flipped: the Japanese
    on top, four meanings below, one of them right. Nothing is written back to
    the deck — a game shouldn't decide what you "know". */
-const quiz = { items: [], pool: [], index: 0, score: 0, wrong: [], locked: false };
+const quiz = { items: [], pool: [], index: 0, score: 0, wrong: [], locked: false,
+               rounds: [], view: 0 };
 
 const quizMeaning = (w) => (w[state.lang] || w.en || "").trim();
 
@@ -769,19 +770,17 @@ function startQuiz(words, decoyFrom){
   quiz.items = shuffledCopy(asked);
   quiz.pool = pool;
   quiz.index = 0; quiz.score = 0; quiz.wrong = []; quiz.locked = false;
+  quiz.rounds = []; quiz.view = 0;
   $("#quizDone").hidden = true;
   $("#quizPlay").hidden = false;
   go("quiz");
   renderQuestion();
 }
 
-function renderQuestion(){
-  const w = quiz.items[quiz.index];
-  if(!w) return;
-  quiz.locked = false;
-  $("#quizProgress").textContent = `${quiz.index + 1} / ${quiz.items.length}`;
-  $("#quizWord").innerHTML = `<span lang="ja">${w.jp}</span>`;
-
+/* Work out the four options for question i, once. They are then remembered, so
+   stepping back shows exactly what you saw rather than a fresh shuffle. */
+function buildRound(i){
+  const w = quiz.items[i];
   const right = quizMeaning(w);
   const seen = new Set([right]);
   const decoys = [];
@@ -792,21 +791,71 @@ function renderQuestion(){
     seen.add(m);
     decoys.push(m);
   }
+  return { options: shuffledCopy([right, ...decoys]), right, picked: null };
+}
+
+function renderQuestion(){
+  if(!quiz.items[quiz.index]) return;
+  quiz.view = quiz.index;
+  if(!quiz.rounds[quiz.index]) quiz.rounds[quiz.index] = buildRound(quiz.index);
+  quiz.locked = false;
+  paintRound();
+}
+
+/* Draw whichever question quiz.view points at. Anything already answered is
+   read-only, with your pick and the right answer still filled in. */
+function paintRound(){
+  const i = quiz.view;
+  const w = quiz.items[i];
+  const round = quiz.rounds[i];
+  if(!w || !round) return;
+  const answered = round.picked !== null;
+  $("#quizProgress").textContent = `${i + 1} / ${quiz.items.length}`;
+  $("#quizWord").innerHTML = `<span lang="ja">${w.jp}</span>`;
+
   const box = $("#quizOptions");
   box.innerHTML = "";
-  shuffledCopy([right, ...decoys]).forEach(text => {
+  round.options.forEach(text => {
     const b = document.createElement("button");
     b.className = "quiz-opt";
     b.type = "button";
     b.textContent = text;
-    b.addEventListener("click", () => answerQuiz(b, text === right, right));
+    if(answered){
+      b.disabled = true;
+      if(text === round.right) b.classList.add("is-right");
+      else if(text === round.picked) b.classList.add("is-wrong");
+    } else if(i !== quiz.index){
+      b.disabled = true;                       // a question not reached yet
+    } else {
+      b.addEventListener("click", () => answerQuiz(b, text));
+    }
     box.appendChild(b);
   });
+  paintQuizNav();
 }
 
-function answerQuiz(btn, isRight, right){
+/* ‹ walks back through what you have answered, › returns towards the question
+   you are actually on. You can never step past it. */
+function paintQuizNav(){
+  const prev = $("#quizPrev"), next = $("#quizNext");
+  if(prev) prev.disabled = quiz.view <= 0;
+  if(next) next.disabled = quiz.view >= quiz.index;
+}
+function stepQuiz(by){
+  const to = quiz.view + by;
+  if(to < 0 || to > quiz.index) return;
+  quiz.view = to;
+  paintRound();
+}
+
+function answerQuiz(btn, text){
   if(quiz.locked) return;
+  const round = quiz.rounds[quiz.index];
+  if(!round || round.picked !== null) return;        // already answered
   quiz.locked = true;
+  round.picked = text;
+  const isRight = text === round.right;
+
   const opts = $$(".quiz-opt");
   opts.forEach(b => { b.disabled = true; });
   if(isRight){
@@ -816,7 +865,7 @@ function answerQuiz(btn, isRight, right){
     quiz.wrong.push(quiz.items[quiz.index]);
     btn.classList.add("is-wrong");
     // show which one it should have been, so a miss still teaches something
-    const good = opts.find(b => b.textContent === right);
+    const good = opts.find(b => b.textContent === round.right);
     if(good) good.classList.add("is-right");
   }
   setTimeout(() => {
@@ -914,6 +963,8 @@ function init(){
   };
   $("#quizBtn").addEventListener("click", goQuiz);
   $("#navQuiz").addEventListener("click", goQuiz);
+  $("#quizPrev").addEventListener("click", () => stepQuiz(-1));
+  $("#quizNext").addEventListener("click", () => stepQuiz(1));
   $("#quizAgainBtn").addEventListener("click", () => startQuiz(quiz.wrong.slice(), quiz.pool));
   $("#quizRestartBtn").addEventListener("click", () => startQuiz(quiz.pool.slice()));
   $("#deselectAllBtn").addEventListener("click", deselectAll);

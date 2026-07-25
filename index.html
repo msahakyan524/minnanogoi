@@ -10,7 +10,7 @@
   <!-- exactly two families at exactly two weights: Noto Sans JP for body text,
        Shippori Mincho for headings and Japanese. Nothing else is used. -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Shippori+Mincho:wght@400;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/styles.css?v=55" />
+  <link rel="stylesheet" href="css/styles.css?v=56" />
 </head>
 <body data-view="home">
   <!-- ===== Top bar ===== -->
@@ -104,6 +104,11 @@
           <p id="quizAsk" class="quiz-ask" data-i18n="quiz_ask">Ո՞րն է իմաստը</p>
         </div>
         <div id="quizOptions" class="quiz-options"></div>
+        <!-- look back at the words already answered, then forward again -->
+        <div class="card-controls quiz-nav">
+          <button class="round" id="quizPrev" aria-label="Previous question">‹</button>
+          <button class="round" id="quizNext" aria-label="Next question">›</button>
+        </div>
       </div>
 
       <div class="deck-done" id="quizDone" hidden>
@@ -228,7 +233,7 @@
   <script src="js/data.js?v=50"></script>
   <script src="js/words2.js?v=48"></script>
   <script src="js/images.js?v=48"></script>
-  <script src="js/app.js?v=56"></script>
+  <script src="js/app.js?v=57"></script>
   <script src="js/cloud.js?v=53"></script>
 </body>
 </html>
