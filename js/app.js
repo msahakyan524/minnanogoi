@@ -1,7 +1,6 @@
 /* ================= State ================= */
 const state = {
   lang: localStorage.getItem("lang") || "en",
-  theme: localStorage.getItem("theme") || "dark",
   selected: new Set(JSON.parse(localStorage.getItem("selected") || "[]")), // "book|lesson"
   specified: new Set(),   // word ids chosen in "specify" (subset of selected lessons)
   deck: [], index: 0, flipped: false,
@@ -596,16 +595,40 @@ function enableSwipe(){
   card.addEventListener("pointercancel", () => { dragging=false; card.style.transform=""; $("#badgeKnown").style.opacity=0; $("#badgeAgain").style.opacity=0; });
 }
 
-/* ================= Theme ================= */
-function applyTheme(){
-  document.documentElement.setAttribute("data-theme", state.theme);
-  const btn = $("#themeToggle");
-  if(btn) btn.textContent = state.theme === "light" ? "◑" : "◐";
-  localStorage.setItem("theme", state.theme);
+/* ================= Sister-site switch =================
+   Play the flower swap first, then leave. The other site plays the matching
+   arrival, so the two halves read as one motion across the hand-off. A
+   sessionStorage flag carries that intent; it survives the navigation but not
+   a new tab, which is exactly the scope we want. */
+function initSiteSwitch(){
+  const box = $("#siteSwitch");
+  const link = $("#goKanji");
+  if(!box || !link) return;
+
+  if(sessionStorage.getItem("cameFromSister")){
+    sessionStorage.removeItem("cameFromSister");
+    box.classList.add("is-arriving");
+    setTimeout(() => box.classList.remove("is-arriving"), 500);
+  }
+
+  link.addEventListener("click", (e) => {
+    if(e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;  // let people open a new tab
+    e.preventDefault();
+    const go = () => { sessionStorage.setItem("cameFromSister", "1"); location.href = link.href; };
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if(reduced){ go(); return; }
+    box.classList.add("is-swapping");
+    setTimeout(go, 300);            // just under the .34s swap, so it never stalls
+  });
 }
-function toggleTheme(){
-  state.theme = state.theme === "light" ? "dark" : "light";
-  applyTheme();
+
+/* ================= Theme =================
+   Dark is the only theme now. Anyone who had picked light before still has
+   "light" sitting in their browser storage, so clear it rather than let a
+   stale value linger. */
+function applyTheme(){
+  document.documentElement.setAttribute("data-theme", "dark");
+  localStorage.removeItem("theme");
 }
 
 /* ================= Persist ================= */
@@ -644,9 +667,9 @@ function restoreSession(){
 /* ================= Wire up ================= */
 function init(){
   applyTheme();
+  initSiteSwitch();
   renderBooks();
   applyI18n();
-  $("#themeToggle").addEventListener("click", toggleTheme);
   const restored = restoreSession();   // put a refreshed page back where it left off
   history.replaceState({view: restored ? "cards" : "home"}, ""); // first history step
   window.addEventListener("popstate", e => setView((e.state && e.state.view) || "home"));
