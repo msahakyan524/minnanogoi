@@ -80,6 +80,8 @@ function applyI18n(){
   if(document.body.dataset.view === "specify") renderSpecify();
   if(document.body.dataset.view === "cards") renderCard();
   if(document.body.dataset.view === "lessons") { renderSingleBooks(); }
+  // the quiz options are meanings, so a language switch has to redraw them
+  if(document.body.dataset.view === "quiz" && !quiz.locked && quiz.items.length) renderQuestion();
   renderBooks();
   updateActionbar();
 }
@@ -215,6 +217,7 @@ function updateActionbar(){
   const n = state.specified.size || words.length;
   $("#selCount").textContent = n;
   $("#studyBtn").disabled = n === 0;
+  $("#quizBtn").disabled = n < 4;      // four words, four options to choose from
   $("#specifyBtn").disabled = selectedWords().length === 0;
   $("#deselectAllBtn").hidden = state.selected.size === 0 && state.specified.size === 0;
   syncActionbarSpace();
@@ -679,6 +682,118 @@ window.reloadFromCloud = function(){
   applyI18n();
 };
 
+/* ================= Quiz =================
+   The same words as the flashcards, played instead of flipped: the Japanese
+   on top, four meanings below, one of them right. Nothing is written back to
+   the deck — a game shouldn't decide what you "know". */
+const quiz = { items: [], pool: [], index: 0, score: 0, wrong: [], locked: false };
+
+const quizMeaning = (w) => (w[state.lang] || w.en || "").trim();
+
+function shuffledCopy(arr){
+  const a = arr.slice();
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* decoyFrom: where the wrong options come from. A replay round has only the
+   missed words left, so its decoys keep coming from the whole original deck. */
+function startQuiz(words, decoyFrom){
+  const asked = words.filter(quizMeaning);
+  const pool  = (decoyFrom || words).filter(quizMeaning);
+  // the Quiz button is already disabled below four words; this is the backstop
+  if(!asked.length || pool.length < 4) return;
+  quiz.items = shuffledCopy(asked);
+  quiz.pool = pool;
+  quiz.index = 0; quiz.score = 0; quiz.wrong = []; quiz.locked = false;
+  $("#quizDone").hidden = true;
+  $("#quizPlay").hidden = false;
+  go("quiz");
+  renderQuestion();
+}
+
+function renderQuestion(){
+  const w = quiz.items[quiz.index];
+  if(!w) return;
+  quiz.locked = false;
+  $("#quizProgress").textContent = `${quiz.index + 1} / ${quiz.items.length}`;
+  $("#quizWord").innerHTML = `<span lang="ja">${w.jp}</span>`;
+
+  const right = quizMeaning(w);
+  const seen = new Set([right]);
+  const decoys = [];
+  for(const d of shuffledCopy(quiz.pool)){
+    if(decoys.length === 3) break;
+    const m = quizMeaning(d);
+    if(seen.has(m)) continue;
+    seen.add(m);
+    decoys.push(m);
+  }
+  const box = $("#quizOptions");
+  box.innerHTML = "";
+  shuffledCopy([right, ...decoys]).forEach(text => {
+    const b = document.createElement("button");
+    b.className = "quiz-opt";
+    b.type = "button";
+    b.textContent = text;
+    b.addEventListener("click", () => answerQuiz(b, text === right, right));
+    box.appendChild(b);
+  });
+}
+
+function answerQuiz(btn, isRight, right){
+  if(quiz.locked) return;
+  quiz.locked = true;
+  const opts = $$(".quiz-opt");
+  opts.forEach(b => { b.disabled = true; });
+  if(isRight){
+    quiz.score++;
+    btn.classList.add("is-right");
+  } else {
+    quiz.wrong.push(quiz.items[quiz.index]);
+    btn.classList.add("is-wrong");
+    // show which one it should have been, so a miss still teaches something
+    const good = opts.find(b => b.textContent === right);
+    if(good) good.classList.add("is-right");
+  }
+  setTimeout(() => {
+    if(quiz.index < quiz.items.length - 1){ quiz.index++; renderQuestion(); }
+    else finishQuiz();
+  }, isRight ? 650 : 1400);
+}
+
+function finishQuiz(){
+  $("#quizPlay").hidden = true;
+  const done = $("#quizDone");
+  done.hidden = false;
+  done.classList.remove("is-entering");
+  void done.offsetWidth;
+  done.classList.add("is-entering");
+
+  const total = quiz.items.length;
+  const missed = total - quiz.score;
+  const graphic = $("#quizGraphic");
+  if(missed === 0){
+    graphic.innerHTML = buildSugee();
+  } else {
+    const rightPct = Math.round((quiz.score / total) * 100);
+    graphic.innerHTML = `
+      ${buildDonut(missed, total)}
+      <div class="done-stats">
+        <div class="done-stat"><div class="done-stat__pct">${rightPct}%</div><div class="done-stat__label">${t("correct")}</div></div>
+        <div class="done-stat"><div class="done-stat__pct">${100 - rightPct}%</div><div class="done-stat__label">${t("wrong")}</div></div>
+      </div>
+      <p class="quiz-ask">${quiz.score} ${t("quiz_score")} ${total}</p>`;
+  }
+  const again = $("#quizAgainBtn");
+  again.hidden = quiz.wrong.length === 0;
+  again.textContent = `${t("quiz_again")} (${quiz.wrong.length})`;
+  $("#quizRestartBtn").textContent = t("restart");
+}
+
 /* bring back an in-progress flashcard session after a page refresh.
    Returns true if a session was actually restored. */
 function restoreSession(){
@@ -730,6 +845,12 @@ function init(){
     startDeck(words, t("flashcards"));
   });
   $("#specifyBtn").addEventListener("click", () => { renderSpecify(); go("specify"); });
+  $("#quizBtn").addEventListener("click", () => {
+    const words = state.specified.size ? selectedWords().filter(w=>state.specified.has(w.id)) : selectedWords();
+    startQuiz(words);
+  });
+  $("#quizAgainBtn").addEventListener("click", () => startQuiz(quiz.wrong.slice(), quiz.pool));
+  $("#quizRestartBtn").addEventListener("click", () => startQuiz(quiz.pool.slice()));
   $("#deselectAllBtn").addEventListener("click", deselectAll);
   window.addEventListener("resize", syncActionbarSpace);   // bar height changes with width
   /* Re-measure whenever the bar itself changes height. Measuring only at

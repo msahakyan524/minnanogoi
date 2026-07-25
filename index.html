@@ -10,7 +10,7 @@
   <!-- exactly two families at exactly two weights: Noto Sans JP for body text,
        Shippori Mincho for headings and Japanese. Nothing else is used. -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Shippori+Mincho:wght@400;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/styles.css?v=49" />
+  <link rel="stylesheet" href="css/styles.css?v=50" />
 </head>
 <body data-view="home">
   <!-- ===== Top bar ===== -->
@@ -87,6 +87,33 @@
       <div id="lessonPreview" class="lesson-preview" hidden></div>
     </section>
 
+    <!-- ===== QUIZ: same words, played instead of flipped ===== -->
+    <section class="view view--quiz" data-screen="quiz">
+      <div class="subhead">
+        <button class="back" data-goto="home">←</button>
+        <div class="deck-meta">
+          <span id="quizTitle" data-i18n="quiz_title">Quiz</span>
+          <span id="quizProgress" class="deck-progress">0 / 0</span>
+        </div>
+      </div>
+
+      <div id="quizPlay">
+        <div class="quiz-card">
+          <div id="quizWord" class="quiz-word"></div>
+          <p id="quizAsk" class="quiz-ask" data-i18n="quiz_ask"></p>
+        </div>
+        <div id="quizOptions" class="quiz-options"></div>
+      </div>
+
+      <div class="deck-done" id="quizDone" hidden>
+        <div id="quizGraphic" class="done-graphic"></div>
+        <div class="deck-done__btns">
+          <button class="btn btn--primary" id="quizAgainBtn" hidden></button>
+          <button class="btn btn--ghost" id="quizRestartBtn"></button>
+        </div>
+      </div>
+    </section>
+
     <!-- ===== FLASHCARDS ===== -->
     <section class="view view--cards" data-screen="cards">
       <div class="subhead">
@@ -153,6 +180,7 @@
     </div>
     <div class="actionbar__btns">
       <button class="btn btn--ghost" id="specifyBtn" data-i18n="specify_btn">Specify words</button>
+      <button class="btn btn--ghost" id="quizBtn" data-i18n="quiz_btn">Quiz</button>
       <button class="btn btn--primary" id="studyBtn" data-i18n="study_btn">Study →</button>
     </div>
   </div>
@@ -196,10 +224,10 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="js/avatars.js?v=48"></script>
-  <script src="js/data.js?v=48"></script>
+  <script src="js/data.js?v=49"></script>
   <script src="js/words2.js?v=48"></script>
   <script src="js/images.js?v=48"></script>
-  <script src="js/app.js?v=48"></script>
+  <script src="js/app.js?v=49"></script>
   <script src="js/cloud.js?v=48"></script>
 </body>
 </html>
