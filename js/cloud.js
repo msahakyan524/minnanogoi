@@ -69,6 +69,9 @@
       favorites: JSON.parse(localStorage.getItem("favorites") || "[]"),
       selected:  JSON.parse(localStorage.getItem("selected") || "[]"),
       lang:      localStorage.getItem("lang") || "hy",
+      // which words have already earned their point — travels with the account
+      // so a second device doesn't pay for the same word again
+      scoredWords: JSON.parse(localStorage.getItem("scoredWords") || "[]"),
     };
   }
   function applyVocab(v) {
@@ -77,6 +80,12 @@
     if (Array.isArray(v.favorites)) localStorage.setItem("favorites", JSON.stringify(v.favorites));
     if (Array.isArray(v.selected))  localStorage.setItem("selected",  JSON.stringify(v.selected));
     if (v.lang) localStorage.setItem("lang", v.lang);
+    if (Array.isArray(v.scoredWords)) {
+      // merge rather than replace: a word paid for on either device stays paid
+      const merged = new Set(JSON.parse(localStorage.getItem("scoredWords") || "[]"));
+      v.scoredWords.forEach((id) => merged.add(id));
+      localStorage.setItem("scoredWords", JSON.stringify([...merged]));
+    }
     pulling = false;
     // let the app pick the new values up without a reload
     if (typeof window.reloadFromCloud === "function") window.reloadFromCloud();

@@ -548,11 +548,31 @@ function wrongByLesson(){
   return [...tally.values()].sort((a, b) => b.count - a.count);
 }
 
+/* One word, one point — ever. Studying the same deck again is good for you but
+   it isn't new knowledge, so remember which words have already been paid for
+   and only credit the ones that haven't. (The kanji site scores separately, so
+   a word known on both sites still counts on both.) */
+const SCORED_KEY = "scoredWords";
+function loadScoredWords(){
+  try { return new Set(JSON.parse(localStorage.getItem(SCORED_KEY) || "[]")); }
+  catch(e){ return new Set(); }
+}
+function creditNewlyKnown(){
+  const scored = loadScoredWords();
+  let fresh = 0;
+  state.known.forEach(id => { if(!scored.has(id)){ scored.add(id); fresh++; } });
+  if(fresh){
+    try { localStorage.setItem(SCORED_KEY, JSON.stringify([...scored])); } catch(e){}
+    if(typeof window.cloudPoints === "function") window.cloudPoints(fresh);
+  }
+  return fresh;
+}
+
 function finishDeck(){
   const total = state.deck.length;
   const unknownCount = total - state.known.size;   // review + anything left unmarked
-  // one point per word known; lands in score_vocab, separate from kanji's score
-  if(typeof window.cloudPoints === "function") window.cloudPoints(state.known.size);
+  // one point per word known, but only the first time that word is known
+  creditNewlyKnown();
   if(typeof window.cloudSession === "function") window.cloudSession(state.known.size, total);
   $("#doneTitle").textContent = "";
   $("#doneSub").textContent = "";
