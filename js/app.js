@@ -92,6 +92,23 @@ function applyI18n(){
   updateActionbar();
 }
 
+/* A short message that fades away — the app had no way of saying anything, so
+   a button that could not act just did nothing, which reads as broken. */
+let toastTimer = null;
+function toast(text){
+  let box = $("#toast");
+  if(!box){
+    box = document.createElement("div");
+    box.id = "toast";
+    box.className = "toast";
+    document.body.appendChild(box);
+  }
+  box.textContent = text;
+  box.classList.add("is-on");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => box.classList.remove("is-on"), 2600);
+}
+
 /* ================= Views + browser history ================= */
 function setView(name){
   document.body.dataset.view = name;
@@ -223,7 +240,6 @@ function updateActionbar(){
   const n = state.specified.size || words.length;
   $("#selCount").textContent = n;
   $("#studyBtn").disabled = n === 0;
-  $("#quizBtn").disabled = n < 4;      // four words, four options to choose from
   $("#specifyBtn").disabled = selectedWords().length === 0;
   $("#deselectAllBtn").hidden = state.selected.size === 0 && state.specified.size === 0;
   syncActionbarSpace();
@@ -889,10 +905,15 @@ function init(){
     startDeck(words, t("flashcards"));
   });
   $("#specifyBtn").addEventListener("click", () => { renderSpecify(); go("specify"); });
-  $("#quizBtn").addEventListener("click", () => {
+  /* Quiz is a mode you can always reach, like Flashcards. If there is not
+     enough picked yet it says so and puts you where you can pick. */
+  const goQuiz = () => {
     const words = state.specified.size ? selectedWords().filter(w=>state.specified.has(w.id)) : selectedWords();
+    if(quizPool(words).length < 4){ go("home"); toast(t("quiz_need")); return; }
     startQuiz(words);
-  });
+  };
+  $("#quizBtn").addEventListener("click", goQuiz);
+  $("#navQuiz").addEventListener("click", goQuiz);
   $("#quizAgainBtn").addEventListener("click", () => startQuiz(quiz.wrong.slice(), quiz.pool));
   $("#quizRestartBtn").addEventListener("click", () => startQuiz(quiz.pool.slice()));
   $("#deselectAllBtn").addEventListener("click", deselectAll);
