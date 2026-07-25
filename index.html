@@ -10,12 +10,28 @@
   <!-- exactly two families at exactly two weights: Noto Sans JP for body text,
        Shippori Mincho for headings and Japanese. Nothing else is used. -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Shippori+Mincho:wght@400;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/styles.css?v=47" />
+  <link rel="stylesheet" href="css/styles.css?v=48" />
 </head>
 <body data-view="home">
   <!-- ===== Top bar ===== -->
   <header class="topbar">
     <div class="topbar__left">
+      <label class="lang" >
+        <select id="langSelect" aria-label="Translation language">
+          <option value="en">English</option>
+          <option value="ru">Русский</option>
+          <option value="hy">Հայերեն</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="topbar__right">
+      <button class="pill" id="navFlashcards"><span data-i18n="flashcards">Flashcards</span></button>
+      <button class="pill pill--ghost" id="navLessons"><span data-i18n="lessons">Lessons</span></button>
+
+      <!-- same account as the kanji site; shows your picture once signed in -->
+      <button class="acc-tab" id="accTab" aria-label="Account" title="Account">☺</button>
+
       <!-- Two sister sites, two flowers. The one you are on sits big in front;
            the other tucks into its bottom-right corner. Tapping the small one
            swaps them, then hands over to that site. -->
@@ -29,21 +45,6 @@
           <img src="kanji-flower.svg" alt="" class="sites__flower" />
         </a>
       </div>
-    </div>
-
-    <div class="topbar__right">
-      <label class="lang" >
-        <select id="langSelect" aria-label="Translation language">
-          <option value="en">English</option>
-          <option value="ru">Русский</option>
-          <option value="hy">Հայերեն</option>
-        </select>
-      </label>
-      <button class="pill" id="navFlashcards"><span data-i18n="flashcards">Flashcards</span></button>
-      <button class="pill pill--ghost" id="navLessons"><span data-i18n="lessons">Lessons</span></button>
-
-      <!-- same account as the kanji site; shows your picture once signed in -->
-      <button class="acc-tab" id="accTab" aria-label="Account" title="Account">☺</button>
 
     </div>
   </header>
@@ -191,11 +192,11 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="js/avatars.js?v=47"></script>
-  <script src="js/data.js?v=47"></script>
-  <script src="js/words2.js?v=47"></script>
-  <script src="js/images.js?v=47"></script>
-  <script src="js/app.js?v=47"></script>
-  <script src="js/cloud.js?v=47"></script>
+  <script src="js/avatars.js?v=48"></script>
+  <script src="js/data.js?v=48"></script>
+  <script src="js/words2.js?v=48"></script>
+  <script src="js/images.js?v=48"></script>
+  <script src="js/app.js?v=48"></script>
+  <script src="js/cloud.js?v=48"></script>
 </body>
 </html>
