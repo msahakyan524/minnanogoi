@@ -640,8 +640,26 @@ function initSiteSwitch(){
   const link = $("#goKanji");
   if(!box || !link) return;
 
+  /* Carry the chosen language across. Both sites sit on the same address, so
+     they share one storage box — they just label the language differently:
+     this site keeps it under "lang", the kanji site under "mk_lang". */
+  const handOverLanguage = () => {
+    try { if(state.lang) localStorage.setItem("mk_lang", state.lang); } catch(e){}
+  };
+  const adoptLanguageFromSister = () => {
+    try {
+      const theirs = localStorage.getItem("mk_lang");
+      if(theirs && theirs !== state.lang && UI[theirs]){
+        state.lang = theirs;
+        localStorage.setItem("lang", theirs);
+        applyI18n();          // no reload needed here: this site repaints on demand
+      }
+    } catch(e){}
+  };
+
   if(sessionStorage.getItem("cameFromSister")){
     sessionStorage.removeItem("cameFromSister");
+    adoptLanguageFromSister();
     box.classList.add("is-arriving");
     setTimeout(() => box.classList.remove("is-arriving"), 500);
   }
@@ -649,7 +667,7 @@ function initSiteSwitch(){
   link.addEventListener("click", (e) => {
     if(e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;  // let people open a new tab
     e.preventDefault();
-    const go = () => { sessionStorage.setItem("cameFromSister", "1"); location.href = link.href; };
+    const go = () => { sessionStorage.setItem("cameFromSister", "1"); handOverLanguage(); location.href = link.href; };
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if(reduced){ go(); return; }
     box.classList.add("is-swapping");
