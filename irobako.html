@@ -37,6 +37,7 @@ h1{font-family:var(--serif);font-size:16px;margin-bottom:4px}
 .mark--sm{max-width:132px}
 .mark--tall{width:auto;height:260px;max-width:none}
 .row{display:flex;align-items:center;justify-content:center;gap:40px;flex-wrap:wrap}
+.defs{position:absolute;width:0;height:0;overflow:hidden}
 
 .note{background:#fff;border:1px solid #d8d8d8;border-radius:4px;padding:24px;margin-top:32px}
 .note h2{font-family:var(--serif);font-size:16px;margin-bottom:12px}
@@ -45,22 +46,33 @@ h1{font-family:var(--serif);font-size:16px;margin-bottom:4px}
 </style>
 </head>
 <body>
+
+<!-- The sakura petal, drawn once and reused. Box is 20 x 40 with the base at
+     (10,40) and the notched tip at the top, so each placement is:
+     translate(to the base point) rotate scale translate(-10,-40).
+     The notch at the tip is the thing that says cherry blossom rather than
+     just "leaf", so it is cut deep enough to survive shrinking. -->
+<svg class="defs" aria-hidden="true"><defs>
+  <path id="sakura" d="M10 40 C0 34 -0.5 17 3.5 8.5 C5.5 3.5 9 2.5 9.3 8 L10 11.5
+    L10.7 8 C11 2.5 14.5 3.5 16.5 8.5 C20.5 17 20 34 10 40 Z" stroke-linejoin="round"/>
+</defs></svg>
+
 <div class="wrap">
 
   <h1>いろばこ</h1>
-  <p class="lede">Japanese only — no Latin under it. ば is は with two short marks
-    at its shoulder, the <b>dakuten</b>, and those two marks are the petals:
-    one the blue of the goi flower, one the pink of the kanji flower.</p>
+  <p class="lede">Japanese only. ば is は with two short marks at its shoulder — the
+    <b>dakuten</b> — and those two marks are now cherry-blossom petals, notch and
+    all: one the blue of the goi flower, one the pink of the kanji flower.</p>
 
-  <!-- ============ horizontal, on three backgrounds ============ -->
+  <!-- ============ horizontal, three backgrounds ============ -->
   <div class="stage stage--light">
     <svg class="mark" viewBox="0 0 290 108" role="img" aria-label="いろばこ">
       <text x="8" y="82" font-family="'Shippori Mincho','Noto Serif JP',serif"
             font-size="64" fill="#141414">いろはこ</text>
-      <ellipse cx="190" cy="38" rx="4.8" ry="9.6" transform="rotate(-25 190 38)"
-               fill="#7c83ff" stroke="#5a61e6" stroke-width="1.6"/>
-      <ellipse cx="201.5" cy="38" rx="4.8" ry="9.6" transform="rotate(25 201.5 38)"
-               fill="#ff8fbb" stroke="#c2185b" stroke-width="1.6"/>
+      <g transform="translate(196,46) rotate(-28) scale(.55) translate(-10,-40)">
+        <use href="#sakura" fill="#7c83ff" stroke="#5a61e6" stroke-width="2"/></g>
+      <g transform="translate(196,46) rotate(22) scale(.55) translate(-10,-40)">
+        <use href="#sakura" fill="#ff8fbb" stroke="#c2185b" stroke-width="2"/></g>
     </svg>
     <p class="cap">on paper</p>
   </div>
@@ -69,10 +81,10 @@ h1{font-family:var(--serif);font-size:16px;margin-bottom:4px}
     <svg class="mark" viewBox="0 0 290 108" role="img" aria-label="いろばこ">
       <text x="8" y="82" font-family="'Shippori Mincho','Noto Serif JP',serif"
             font-size="64" fill="#ffffff">いろはこ</text>
-      <ellipse cx="190" cy="38" rx="4.8" ry="9.6" transform="rotate(-25 190 38)"
-               fill="#7c83ff" stroke="#5a61e6" stroke-width="1.6"/>
-      <ellipse cx="201.5" cy="38" rx="4.8" ry="9.6" transform="rotate(25 201.5 38)"
-               fill="#ff8fbb" stroke="#c2185b" stroke-width="1.6"/>
+      <g transform="translate(196,46) rotate(-28) scale(.55) translate(-10,-40)">
+        <use href="#sakura" fill="#7c83ff" stroke="#5a61e6" stroke-width="2"/></g>
+      <g transform="translate(196,46) rotate(22) scale(.55) translate(-10,-40)">
+        <use href="#sakura" fill="#ff8fbb" stroke="#c2185b" stroke-width="2"/></g>
     </svg>
     <p class="cap">on goi’s black</p>
   </div>
@@ -81,10 +93,10 @@ h1{font-family:var(--serif);font-size:16px;margin-bottom:4px}
     <svg class="mark" viewBox="0 0 290 108" role="img" aria-label="いろばこ">
       <text x="8" y="82" font-family="'Shippori Mincho','Noto Serif JP',serif"
             font-size="64" fill="#33262c">いろはこ</text>
-      <ellipse cx="190" cy="38" rx="4.8" ry="9.6" transform="rotate(-25 190 38)"
-               fill="#7c83ff" stroke="#5a61e6" stroke-width="1.6"/>
-      <ellipse cx="201.5" cy="38" rx="4.8" ry="9.6" transform="rotate(25 201.5 38)"
-               fill="#ff8fbb" stroke="#c2185b" stroke-width="1.6"/>
+      <g transform="translate(196,46) rotate(-28) scale(.55) translate(-10,-40)">
+        <use href="#sakura" fill="#7c83ff" stroke="#5a61e6" stroke-width="2"/></g>
+      <g transform="translate(196,46) rotate(22) scale(.55) translate(-10,-40)">
+        <use href="#sakura" fill="#ff8fbb" stroke="#c2185b" stroke-width="2"/></g>
     </svg>
     <p class="cap">on the kanji site’s pink</p>
   </div>
@@ -92,7 +104,8 @@ h1{font-family:var(--serif);font-size:16px;margin-bottom:4px}
   <!-- ============ vertical + small ============ -->
   <div class="stage stage--light">
     <div class="row">
-      <!-- read top to bottom, the way Japanese is set vertically -->
+      <!-- read top to bottom, the way Japanese is set vertically. Dakuten sit at
+           the upper right of the glyph there too, so the petals do not move. -->
       <svg class="mark mark--tall" viewBox="0 0 84 292" role="img" aria-label="いろばこ tategaki">
         <g font-family="'Shippori Mincho','Noto Serif JP',serif" font-size="56"
            text-anchor="middle" fill="#141414">
@@ -101,37 +114,52 @@ h1{font-family:var(--serif);font-size:16px;margin-bottom:4px}
           <text x="34" y="202">は</text>
           <text x="34" y="272">こ</text>
         </g>
-        <ellipse cx="54" cy="176" rx="4.2" ry="8.4" transform="rotate(-25 54 176)"
-                 fill="#7c83ff" stroke="#5a61e6" stroke-width="1.4"/>
-        <ellipse cx="64" cy="176" rx="4.2" ry="8.4" transform="rotate(25 64 176)"
-                 fill="#ff8fbb" stroke="#c2185b" stroke-width="1.4"/>
+        <g transform="translate(58,186) rotate(-28) scale(.48) translate(-10,-40)">
+          <use href="#sakura" fill="#7c83ff" stroke="#5a61e6" stroke-width="2.3"/></g>
+        <g transform="translate(58,186) rotate(22) scale(.48) translate(-10,-40)">
+          <use href="#sakura" fill="#ff8fbb" stroke="#c2185b" stroke-width="2.3"/></g>
       </svg>
 
       <svg class="mark mark--sm" viewBox="0 0 290 108" aria-hidden="true">
         <text x="8" y="82" font-family="'Shippori Mincho','Noto Serif JP',serif"
               font-size="64" fill="#141414">いろはこ</text>
-        <ellipse cx="190" cy="38" rx="4.8" ry="9.6" transform="rotate(-25 190 38)"
-                 fill="#7c83ff" stroke="#5a61e6" stroke-width="1.6"/>
-        <ellipse cx="201.5" cy="38" rx="4.8" ry="9.6" transform="rotate(25 201.5 38)"
-                 fill="#ff8fbb" stroke="#c2185b" stroke-width="1.6"/>
+        <g transform="translate(196,46) rotate(-28) scale(.55) translate(-10,-40)">
+          <use href="#sakura" fill="#7c83ff" stroke="#5a61e6" stroke-width="2"/></g>
+        <g transform="translate(196,46) rotate(22) scale(.55) translate(-10,-40)">
+          <use href="#sakura" fill="#ff8fbb" stroke="#c2185b" stroke-width="2"/></g>
       </svg>
     </div>
     <p class="cap">vertical, and shrunk down</p>
   </div>
 
+  <!-- ============ the petal on its own ============ -->
+  <div class="stage stage--light">
+    <div class="row">
+      <svg width="70" height="140" viewBox="0 0 20 42" aria-label="sakura petal">
+        <use href="#sakura" fill="#7c83ff" stroke="#5a61e6" stroke-width="1.1"/>
+      </svg>
+      <svg width="70" height="140" viewBox="0 0 20 42" aria-label="sakura petal">
+        <use href="#sakura" fill="#ff8fbb" stroke="#c2185b" stroke-width="1.1"/>
+      </svg>
+    </div>
+    <p class="cap">the petal, close up — note the notch</p>
+  </div>
+
   <section class="note">
     <h2>Notes</h2>
+    <p><b>What makes it sakura.</b> A cherry-blossom petal is not a plain oval —
+      it has a small <b>notch cut into the tip</b>, and that notch is the whole
+      difference between reading as a blossom and reading as a leaf. It is cut
+      deep enough here to still show once the petal shrinks to accent size.</p>
     <p><b>The petals do the work.</b> Those two marks are exactly what turns
-      <i>iroha</i> into <i>irobako</i>, so the flower is the accent rather than an
-      ornament placed beside it. In the vertical setting they sit at the upper
-      right of the は — which is where dakuten belong in vertical Japanese too, so
-      the same idea holds in both directions.</p>
-    <p><b>Why not kanji.</b> 色箱 would also read <i>irobako</i> and looks more
-      formal, but kanji has no は for the marks to sit on, so the whole petal idea
-      disappears. Kana keeps it.</p>
-    <p><b>Worth checking on your screen:</b> I placed the petals by measuring
-      against a real ば, but there is no browser here, so I checked it in a
-      different Japanese font rather than Shippori Mincho. If they sit too high,
+      <i>iroha</i> into <i>irobako</i>, so the blossom is the accent rather than
+      an ornament placed beside it. Set vertically they stay at the upper right of
+      the は, which is where dakuten belong in vertical Japanese anyway.</p>
+    <p><b>Why not kanji.</b> 色箱 also reads <i>irobako</i> and looks more formal,
+      but kanji has no は for the marks to sit on, so the petal idea disappears.</p>
+    <p><b>Worth checking on your screen:</b> I placed and sized the petals by
+      measuring against a real ば, but there is no browser here, so I checked it in
+      a different Japanese font rather than Shippori Mincho. If they sit too high,
       too low, or crowd the こ, say which and it is a one-line nudge.</p>
   </section>
 
