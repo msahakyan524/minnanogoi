@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>irobako — name &amp; logo</title>
+<title>いろばこ — logo</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -11,7 +11,7 @@
 <style>
 :root{
   /* lifted straight from the two site favicons */
-  --blue:#7c83ff; --blue-d:#5a61e6;   /* goi flower  */
+  --blue:#7c83ff; --blue-d:#5a61e6;   /* goi flower   */
   --pink:#ff8fbb; --pink-d:#c2185b;   /* kanji flower */
   --sans:"Noto Sans JP",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
   --serif:"Shippori Mincho","Noto Serif JP",Georgia,serif;
@@ -30,50 +30,43 @@ h1{font-family:var(--serif);font-size:16px;margin-bottom:4px}
 .cap{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#5f5f5f;margin-top:12px}
 .stage--dark .cap{color:#9a9a9a}
 
-/* The lockup is one inline SVG. Japanese kana are full-width — exactly one em
-   each in any Japanese font — so the は always starts at exactly 2 em, and the
-   petals can be placed against that without depending on the font's metrics. */
-.mark{width:100%;max-width:420px;height:auto}
-.mark--sm{max-width:150px}
-
-/* Latin name, blue half and pink half, split where the petals sit */
-.latin{font-family:var(--serif);font-weight:700;letter-spacing:-.5px;line-height:1;font-size:40px}
-.latin .a{color:var(--blue-d)}
-.latin .b{color:var(--pink-d)}
-.on-dark .latin .a,.on-dark .latin .b{color:#fff}
+/* One inline SVG per lockup. Japanese kana are full-width — exactly one em in
+   any Japanese font — so は always begins at a known spot and the petals land
+   on its shoulder whichever font resolves. */
+.mark{width:100%;max-width:400px;height:auto}
+.mark--sm{max-width:132px}
+.mark--tall{width:auto;height:260px;max-width:none}
+.row{display:flex;align-items:center;justify-content:center;gap:40px;flex-wrap:wrap}
 
 .note{background:#fff;border:1px solid #d8d8d8;border-radius:4px;padding:24px;margin-top:32px}
 .note h2{font-family:var(--serif);font-size:16px;margin-bottom:12px}
 .note p{font-size:14px;color:#5f5f5f;margin-bottom:8px;max-width:66ch}
 .note b{color:#141414}
-.row{display:flex;align-items:center;justify-content:center;gap:32px;flex-wrap:wrap}
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <h1>irobako</h1>
-  <p class="lede">いろばこ. ば is は with two little marks on it — the <b>dakuten</b>.
-    Those two marks are the petals: one the blue of the goi flower, one the pink of
-    the kanji flower. The name is tinted the same two ways.</p>
+  <h1>いろばこ</h1>
+  <p class="lede">Japanese only — no Latin under it. ば is は with two short marks
+    at its shoulder, the <b>dakuten</b>, and those two marks are the petals:
+    one the blue of the goi flower, one the pink of the kanji flower.</p>
 
-  <!-- ============ the lockup, three backgrounds ============ -->
+  <!-- ============ horizontal, on three backgrounds ============ -->
   <div class="stage stage--light">
-    <svg class="mark" viewBox="0 0 300 110" role="img" aria-label="irobako">
+    <svg class="mark" viewBox="0 0 290 108" role="img" aria-label="いろばこ">
       <text x="8" y="82" font-family="'Shippori Mincho','Noto Serif JP',serif"
             font-size="64" fill="#141414">いろはこ</text>
-      <!-- petal dakuten: は starts at 8 + 2em = 136, so these sit on its shoulder -->
       <ellipse cx="190" cy="38" rx="4.8" ry="9.6" transform="rotate(-25 190 38)"
                fill="#7c83ff" stroke="#5a61e6" stroke-width="1.6"/>
       <ellipse cx="201.5" cy="38" rx="4.8" ry="9.6" transform="rotate(25 201.5 38)"
                fill="#ff8fbb" stroke="#c2185b" stroke-width="1.6"/>
     </svg>
-    <p class="latin"><span class="a">iro</span><span class="b">bako</span></p>
     <p class="cap">on paper</p>
   </div>
 
-  <div class="stage stage--dark on-dark">
-    <svg class="mark" viewBox="0 0 300 110" role="img" aria-label="irobako">
+  <div class="stage stage--dark">
+    <svg class="mark" viewBox="0 0 290 108" role="img" aria-label="いろばこ">
       <text x="8" y="82" font-family="'Shippori Mincho','Noto Serif JP',serif"
             font-size="64" fill="#ffffff">いろはこ</text>
       <ellipse cx="190" cy="38" rx="4.8" ry="9.6" transform="rotate(-25 190 38)"
@@ -81,12 +74,11 @@ h1{font-family:var(--serif);font-size:16px;margin-bottom:4px}
       <ellipse cx="201.5" cy="38" rx="4.8" ry="9.6" transform="rotate(25 201.5 38)"
                fill="#ff8fbb" stroke="#c2185b" stroke-width="1.6"/>
     </svg>
-    <p class="latin"><span class="a">iro</span><span class="b">bako</span></p>
     <p class="cap">on goi’s black</p>
   </div>
 
   <div class="stage stage--pink">
-    <svg class="mark" viewBox="0 0 300 110" role="img" aria-label="irobako">
+    <svg class="mark" viewBox="0 0 290 108" role="img" aria-label="いろばこ">
       <text x="8" y="82" font-family="'Shippori Mincho','Noto Serif JP',serif"
             font-size="64" fill="#33262c">いろはこ</text>
       <ellipse cx="190" cy="38" rx="4.8" ry="9.6" transform="rotate(-25 190 38)"
@@ -94,14 +86,28 @@ h1{font-family:var(--serif);font-size:16px;margin-bottom:4px}
       <ellipse cx="201.5" cy="38" rx="4.8" ry="9.6" transform="rotate(25 201.5 38)"
                fill="#ff8fbb" stroke="#c2185b" stroke-width="1.6"/>
     </svg>
-    <p class="latin"><span class="a">iro</span><span class="b">bako</span></p>
     <p class="cap">on the kanji site’s pink</p>
   </div>
 
-  <!-- ============ small sizes ============ -->
+  <!-- ============ vertical + small ============ -->
   <div class="stage stage--light">
     <div class="row">
-      <svg class="mark mark--sm" viewBox="0 0 300 110" aria-hidden="true">
+      <!-- read top to bottom, the way Japanese is set vertically -->
+      <svg class="mark mark--tall" viewBox="0 0 84 292" role="img" aria-label="いろばこ tategaki">
+        <g font-family="'Shippori Mincho','Noto Serif JP',serif" font-size="56"
+           text-anchor="middle" fill="#141414">
+          <text x="34" y="62">い</text>
+          <text x="34" y="132">ろ</text>
+          <text x="34" y="202">は</text>
+          <text x="34" y="272">こ</text>
+        </g>
+        <ellipse cx="54" cy="176" rx="4.2" ry="8.4" transform="rotate(-25 54 176)"
+                 fill="#7c83ff" stroke="#5a61e6" stroke-width="1.4"/>
+        <ellipse cx="64" cy="176" rx="4.2" ry="8.4" transform="rotate(25 64 176)"
+                 fill="#ff8fbb" stroke="#c2185b" stroke-width="1.4"/>
+      </svg>
+
+      <svg class="mark mark--sm" viewBox="0 0 290 108" aria-hidden="true">
         <text x="8" y="82" font-family="'Shippori Mincho','Noto Serif JP',serif"
               font-size="64" fill="#141414">いろはこ</text>
         <ellipse cx="190" cy="38" rx="4.8" ry="9.6" transform="rotate(-25 190 38)"
@@ -109,26 +115,24 @@ h1{font-family:var(--serif);font-size:16px;margin-bottom:4px}
         <ellipse cx="201.5" cy="38" rx="4.8" ry="9.6" transform="rotate(25 201.5 38)"
                  fill="#ff8fbb" stroke="#c2185b" stroke-width="1.6"/>
       </svg>
-      <p class="latin" style="font-size:16px"><span class="a">iro</span><span class="b">bako</span></p>
     </div>
-    <p class="cap">shrunk down</p>
+    <p class="cap">vertical, and shrunk down</p>
   </div>
 
   <section class="note">
-    <h2>What the petals are</h2>
-    <p>In Japanese, <b>ば</b> is just <b>は</b> with two short strokes added at its
-      shoulder. Those strokes are what turn the sound <i>ha</i> into <i>ba</i> — so
-      they are literally the two marks that make <b>irobako</b> out of
-      <i>iroha</i>. Replacing them with two petals means the flower is doing the
-      work of the accent, not sitting next to it as decoration.</p>
-    <p>Neither colour is new: the blue is the <b>goi</b> flower (#7c83ff), the pink
-      is the <b>kanji</b> flower (#ff8fbb). The Latin name splits at the same
-      point — <span style="color:#5a61e6;font-weight:700">iro</span> blue,
-      <span style="color:#c2185b;font-weight:700">bako</span> pink.</p>
-    <p><b>Worth checking on your screen:</b> I positioned the petals against the
-      shoulder of the は by measurement, but I have no browser here to see it in
-      Shippori Mincho — I checked it in a different Japanese font. If they sit too
-      high, too low, or crowd the こ, tell me which and it is a one-line nudge.</p>
+    <h2>Notes</h2>
+    <p><b>The petals do the work.</b> Those two marks are exactly what turns
+      <i>iroha</i> into <i>irobako</i>, so the flower is the accent rather than an
+      ornament placed beside it. In the vertical setting they sit at the upper
+      right of the は — which is where dakuten belong in vertical Japanese too, so
+      the same idea holds in both directions.</p>
+    <p><b>Why not kanji.</b> 色箱 would also read <i>irobako</i> and looks more
+      formal, but kanji has no は for the marks to sit on, so the whole petal idea
+      disappears. Kana keeps it.</p>
+    <p><b>Worth checking on your screen:</b> I placed the petals by measuring
+      against a real ば, but there is no browser here, so I checked it in a
+      different Japanese font rather than Shippori Mincho. If they sit too high,
+      too low, or crowd the こ, say which and it is a one-line nudge.</p>
   </section>
 
 </div>
