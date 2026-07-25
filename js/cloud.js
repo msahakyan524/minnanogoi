@@ -153,20 +153,29 @@
         go:"Sign in",make:"Create account",have:"Already have an account?",
         need:"No account yet?",out:"Sign out",pic:"Picture",
         why:"Sign in to keep your words on every device.",
-        pts:"Vocabulary points",board:"Leaderboard"},
+        pts:"Vocabulary points",board:"Leaderboard",
+        board_off:"The leaderboard isn't switched on yet.",
+        board_empty:"Nobody has points yet.",
+        board_note:"One point per word you have learned."},
     ru:{signin:"Вход",email:"Эл. почта",pass:"Пароль",name:"Имя",code:"Код приглашения",
         go:"Войти",make:"Создать аккаунт",have:"Уже есть аккаунт?",
         need:"Нет аккаунта?",out:"Выйти",pic:"Картинка",
         why:"Войдите, чтобы слова были на всех устройствах.",
-        pts:"Очки словаря",board:"Таблица"},
+        pts:"Очки словаря",board:"Таблица",
+        board_off:"Таблица ещё не включена.",
+        board_empty:"Пока ни у кого нет очков.",
+        board_note:"Одно очко за каждое выученное слово."},
     hy:{signin:"Մուտք",email:"Էլ. փոստ",pass:"Գաղտնաբառ",name:"Անուն",code:"Հրավերի կոդ",
         go:"Մուտք",make:"Ստեղծել հաշիվ",have:"Արդեն ունե՞ս հաշիվ",
         need:"Հաշիվ չունե՞ս",out:"Դուրս գալ",pic:"Նկար",
         why:"Մուտք գործիր՝ բառերը բոլոր սարքերում պահելու համար։",
-        pts:"Բառապաշարի միավորներ",board:"Աղյուսակ"},
+        pts:"Բառապաշարի միավորներ",board:"Աղյուսակ",
+        board_off:"Աղյուսակը դեռ միացված չէ։",
+        board_empty:"Դեռ ոչ ոք միավոր չունի։",
+        board_note:"Մեկ միավոր՝ սովորած յուրաքանչյուր բառի համար։"},
   };
   const t2 = (k) => {
-    const l = localStorage.getItem("lang") || "hy";
+    const l = localStorage.getItem("mn_lang") || localStorage.getItem("lang") || "hy";
     return (STR[l] && STR[l][k]) || STR.en[k];
   };
 
@@ -242,9 +251,45 @@
     head.appendChild(who);
     out.appendChild(head);
 
+    const board = el("div", "acc-board");
+    out.appendChild(board);
+    renderBoard(board);
+
     const out2 = el("button", "btn btn--ghost", t2("out"));
     out2.addEventListener("click", async () => { await sb.auth.signOut(); });
     out.appendChild(out2);
+  }
+
+  /* ---------------- leaderboard ----------------
+     Reads the shared `leaderboard` view, which exposes only name, picture and
+     points — never emails. Sorted by score_vocab, this site's own column, so
+     the two sisters rank independently even though it is one account. */
+  async function renderBoard(box) {
+    box.innerHTML = "";
+    box.appendChild(el("h3", "acc-board__title", t2("board")));
+    const { data, error } = await sb.from("leaderboard").select("*");
+    if (error) {
+      box.appendChild(el("p", "acc-board__note", t2("board_off")));
+      return;
+    }
+    const rows = (data || []).slice()
+      .sort((a, b) => (b.score_vocab || 0) - (a.score_vocab || 0));
+    if (!rows.length) {
+      box.appendChild(el("p", "acc-board__note", t2("board_empty")));
+      return;
+    }
+    const mine = (profile && profile.display_name) || "";
+    const list = el("div", "rank-list");
+    rows.forEach((r, i) => {
+      const row = el("div", "rank-row" + (r.display_name === mine ? " is-me" : ""));
+      row.appendChild(el("span", "rank-no", "#" + (i + 1)));
+      row.appendChild(avatarBox(r.avatar, "ava--sm"));
+      row.appendChild(el("span", "rank-name", r.display_name || "—"));
+      row.appendChild(el("span", "rank-pts", String(Math.round(r.score_vocab || 0))));
+      list.appendChild(row);
+    });
+    box.appendChild(list);
+    box.appendChild(el("p", "acc-board__note", t2("board_note")));
   }
 
   function togglePicker(out) {

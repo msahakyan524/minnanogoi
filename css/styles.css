@@ -451,6 +451,21 @@ body[data-view="specify"] .actionbar{display:flex}
 .acc-name{font-family:var(--display);font-weight:700;font-size:16px}
 .acc-pts{font-size:14px;color:var(--ink-soft)}
 
+/* ===== Leaderboard: name, picture, points — no emails ever ===== */
+.acc-board{margin:24px 0}
+.acc-board__title{font-family:var(--display);font-size:16px;margin-bottom:12px}
+.acc-board__note{font-size:14px;color:var(--ink-soft);margin-top:12px}
+.rank-list{display:flex;flex-direction:column;gap:4px}
+.rank-row{display:flex;align-items:center;gap:12px;min-height:44px;
+  padding:8px 12px;background:var(--surface);border:1px solid var(--line)}
+/* your own row is the one you look for, so it gets the white fill */
+.rank-row.is-me{background:var(--primary);color:var(--on-primary);border-color:var(--primary)}
+.rank-row.is-me .rank-no{color:var(--on-primary)}
+.rank-no{font-size:14px;color:var(--ink-soft);min-width:32px}
+.rank-name{flex:1;min-width:0;font-size:16px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.rank-pts{font-weight:700;font-size:16px}
+
 .acc-picker{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:16px 0 0}
 .acc-choice{min-height:44px;aspect-ratio:1/1;padding:8px;background:var(--bg);
   border:1px solid var(--line);color:var(--ink)}
