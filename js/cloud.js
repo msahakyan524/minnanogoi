@@ -157,7 +157,15 @@
         board_off:"The leaderboard isn't switched on yet.",
         board_empty:"Nobody has points yet.",
         board_note:"One point per word you have learned.",
-        upload:"Upload a photo",upload_bad:"Could not read that picture."},
+        upload:"Upload a photo",upload_bad:"Could not read that picture.",
+        pic_ok:"Picture saved.",pic_bad:"Could not save the picture:",
+        pic_gone:"The picture was not saved — sign out and back in.",
+        admin:"Admin panel",people:"People",people_note:"vocabulary / kanji points",
+        invites:"Invite codes",code_one:"Create a one-time code",
+        code_five:"Create a code for 5 people",
+        invites_note:"Nobody can sign up without a code.",
+        no_codes:"No codes — nobody can sign up.",spent:"used up",
+        copy:"Tap to copy",copied:"Copied:",delete:"Delete code"},
     ru:{signin:"Вход",email:"Эл. почта",pass:"Пароль",name:"Имя",code:"Код приглашения",
         go:"Войти",make:"Создать аккаунт",have:"Уже есть аккаунт?",
         need:"Нет аккаунта?",out:"Выйти",pic:"Картинка",
@@ -166,7 +174,15 @@
         board_off:"Таблица ещё не включена.",
         board_empty:"Пока ни у кого нет очков.",
         board_note:"Одно очко за каждое выученное слово.",
-        upload:"Загрузить фото",upload_bad:"Не удалось прочитать эту картинку."},
+        upload:"Загрузить фото",upload_bad:"Не удалось прочитать эту картинку.",
+        pic_ok:"Картинка сохранена.",pic_bad:"Не удалось сохранить картинку:",
+        pic_gone:"Картинка не сохранилась — выйди и войди снова.",
+        admin:"Панель админа",people:"Люди",people_note:"очки словаря / кандзи",
+        invites:"Коды приглашений",code_one:"Создать одноразовый код",
+        code_five:"Создать код на 5 человек",
+        invites_note:"Без кода зарегистрироваться нельзя.",
+        no_codes:"Кодов нет — никто не сможет зарегистрироваться.",spent:"использован",
+        copy:"Нажми, чтобы скопировать",copied:"Скопировано:",delete:"Удалить код"},
     hy:{signin:"Մուտք",email:"Էլ. փոստ",pass:"Գաղտնաբառ",name:"Անուն",code:"Հրավերի կոդ",
         go:"Մուտք",make:"Ստեղծել հաշիվ",have:"Արդեն ունե՞ս հաշիվ",
         need:"Հաշիվ չունե՞ս",out:"Դուրս գալ",pic:"Նկար",
@@ -175,7 +191,15 @@
         board_off:"Աղյուսակը դեռ միացված չէ։",
         board_empty:"Դեռ ոչ ոք միավոր չունի։",
         board_note:"Մեկ միավոր՝ սովորած յուրաքանչյուր բառի համար։",
-        upload:"Վերբեռնել լուսանկար",upload_bad:"Չհաջողվեց կարդալ այդ նկարը։"},
+        upload:"Վերբեռնել լուսանկար",upload_bad:"Չհաջողվեց կարդալ այդ նկարը։",
+        pic_ok:"Նկարը պահվեց։",pic_bad:"Չհաջողվեց պահել նկարը՝",
+        pic_gone:"Նկարը չպահվեց — դուրս եկ ու նորից մուտք գործիր։",
+        admin:"Ադմին վահանակ",people:"Մարդիկ",people_note:"բառապաշարի / կանջիի միավորներ",
+        invites:"Հրավերի կոդեր",code_one:"Ստեղծել մեկանգամյա կոդ",
+        code_five:"Ստեղծել կոդ 5 հոգու համար",
+        invites_note:"Առանց կոդի ոչ ոք չի կարող գրանցվել։",
+        no_codes:"Կոդ չկա — ոչ ոք չի կարող գրանցվել։",spent:"օգտագործված",
+        copy:"Սեղմիր՝ պատճենելու համար",copied:"Պատճենվեց՝",delete:"Ջնջել կոդը"},
   };
   const t2 = (k) => {
     const l = localStorage.getItem("mn_lang") || localStorage.getItem("lang") || "hy";
@@ -258,9 +282,116 @@
     out.appendChild(board);
     renderBoard(board);
 
+    if (profile && profile.is_admin) {
+      const adm = el("button", "btn btn--primary acc-admin", t2("admin"));
+      adm.addEventListener("click", () => toggleAdmin(out));
+      out.appendChild(adm);
+    }
+
     const out2 = el("button", "btn btn--ghost", t2("out"));
     out2.addEventListener("click", async () => { await sb.auth.signOut(); });
     out.appendChild(out2);
+  }
+
+  /* ---------------- admin panel ----------------
+     Only shown to the admin, and only useful to them: who has signed up, and
+     the invite codes that let anyone sign up at all. The database enforces
+     both — editing this page gets nobody in. */
+  function toggleAdmin(out) {
+    const open = out.querySelector(".acc-admin-box");
+    if (open) { open.remove(); return; }
+    const box = el("div", "acc-admin-box");
+    out.appendChild(box);
+    renderPeople(box);
+    renderInvites(box);
+  }
+
+  async function renderPeople(box) {
+    const wrap = el("div", "admin-block");
+    wrap.appendChild(el("h3", "acc-board__title", t2("people")));
+    box.appendChild(wrap);
+    const { data, error } = await sb.from("profiles")
+      .select("display_name, avatar, score, score_vocab, last_seen");
+    if (error) { wrap.appendChild(el("p", "acc-board__note", error.message)); return; }
+    const rows = (data || []).slice()
+      .sort((a, b) => (b.score_vocab || 0) - (a.score_vocab || 0));
+    const list = el("div", "rank-list");
+    rows.forEach((r) => {
+      const row = el("div", "rank-row");
+      row.appendChild(avatarBox(r.avatar, "ava--sm"));
+      row.appendChild(el("span", "rank-name", r.display_name || "—"));
+      row.appendChild(el("span", "rank-pts",
+        Math.round(r.score_vocab || 0) + " / " + Math.round(r.score || 0)));
+      list.appendChild(row);
+    });
+    if (!rows.length) list.appendChild(el("p", "acc-board__note", t2("board_empty")));
+    wrap.appendChild(list);
+    wrap.appendChild(el("p", "acc-board__note", t2("people_note")));
+  }
+
+  async function renderInvites(box) {
+    const wrap = el("div", "admin-block");
+    wrap.appendChild(el("h3", "acc-board__title", t2("invites")));
+    const list = el("div", "rank-list");
+    wrap.appendChild(list);
+    const one = el("button", "btn btn--primary acc-upload", t2("code_one"));
+    const five = el("button", "btn btn--ghost acc-upload", t2("code_five"));
+    wrap.appendChild(one);
+    wrap.appendChild(five);
+    wrap.appendChild(el("p", "acc-board__note", t2("invites_note")));
+    box.appendChild(wrap);
+
+    async function draw() {
+      list.innerHTML = "";
+      const { data, error } = await sb.from("invites")
+        .select("code, uses, max_uses").order("created_at");
+      if (error) { list.appendChild(el("p", "acc-board__note", error.message)); return; }
+      (data || []).forEach((c) => {
+        const spent = c.max_uses != null && c.uses >= c.max_uses;
+        const row = el("div", "rank-row" + (spent ? " is-spent" : ""));
+        const code = el("button", "rank-name invite-code", c.code);
+        code.title = t2("copy");
+        code.addEventListener("click", () => copyText(c.code));
+        row.appendChild(code);
+        row.appendChild(el("span", "rank-pts",
+          spent ? t2("spent") : (c.max_uses != null ? c.uses + " / " + c.max_uses : String(c.uses))));
+        const del = el("button", "rank-no", "✕");
+        del.setAttribute("aria-label", t2("delete"));
+        del.addEventListener("click", async () => {
+          await sb.from("invites").delete().eq("code", c.code);
+          draw();
+        });
+        row.appendChild(del);
+        list.appendChild(row);
+      });
+      if (!(data || []).length) list.appendChild(el("p", "acc-board__note", t2("no_codes")));
+    }
+    async function make(button, maxUses, label) {
+      button.disabled = true;
+      const code = makeCode();
+      const { error } = await sb.from("invites").insert({ code, max_uses: maxUses, label });
+      button.disabled = false;
+      if (error) { list.appendChild(el("p", "acc-board__note", error.message)); return; }
+      await draw();
+      copyText(code);
+    }
+    one.addEventListener("click", () => make(one, 1, "one-time"));
+    five.addEventListener("click", () => make(five, 5, "five-uses"));
+    await draw();
+  }
+
+  /* readable random code, no 0/O or 1/I to mistype */
+  function makeCode() {
+    const abc = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let out = "";
+    for (let i = 0; i < 4; i++) out += abc[Math.floor(Math.random() * abc.length)];
+    out += "-";
+    for (let i = 0; i < 4; i++) out += abc[Math.floor(Math.random() * abc.length)];
+    return out;
+  }
+  function copyText(text) {
+    try { navigator.clipboard.writeText(text); say(t2("copied") + " " + text); }
+    catch (e) { say(text); }
   }
 
   /* ---------------- leaderboard ----------------
@@ -345,12 +476,19 @@
     });
   }
 
+  /* Ask the database to hand the row back, and believe only what it returns.
+     This used to fire and forget: the picture changed on screen, the save
+     failed quietly, and the old picture came back on the next visit. */
   async function saveAvatar(v) {
     if (!sb || !me) return;
-    profile = Object.assign({}, profile, { avatar: v });
+    const { data, error } = await sb.from("profiles")
+      .update({ avatar: v }).eq("id", me.id).select("avatar").maybeSingle();
+    if (error) { say(t2("pic_bad") + " " + error.message, true); return; }
+    if (!data) { say(t2("pic_gone"), true); return; }
+    profile = Object.assign({}, profile, { avatar: data.avatar });
     render();
-    await sb.from("profiles").update({ avatar: v }).eq("id", me.id);
     paintTab();
+    say(t2("pic_ok"));
   }
 
   /* ---------- the button in the top bar ---------- */

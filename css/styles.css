@@ -476,6 +476,14 @@ body[data-view="specify"] .actionbar{display:flex}
 .rank-name{flex:1;min-width:0;font-size:16px;overflow:hidden;
   text-overflow:ellipsis;white-space:nowrap}
 .rank-pts{font-weight:700;font-size:16px}
+/* ===== Admin panel: people and invite codes ===== */
+.acc-admin{width:100%;margin-top:16px}
+.acc-admin-box{margin-top:16px}
+.admin-block{margin-bottom:24px}
+.rank-row.is-spent{opacity:.5}
+.invite-code{font-family:var(--font);font-weight:700;letter-spacing:1px;
+  text-align:left;cursor:pointer}
+.invite-code:hover{text-decoration:underline}
 
 .acc-picker{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:16px 0 0}
 .acc-choice{min-height:44px;aspect-ratio:1/1;padding:8px;background:var(--bg);
