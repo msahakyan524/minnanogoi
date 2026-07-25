@@ -433,3 +433,13 @@ body[data-view="specify"] .actionbar{display:flex}
 @media(max-width:560px){
   .acc-tab{width:36px;height:36px}
 }
+
+/* ===== イロバコ down the right edge ===== */
+/* The name both sister sites share, set vertically the way a shop sign hangs
+   beside a doorway. It lives in the empty gutter next to the 960px content
+   column — so it is hidden below 1100px, where that gutter runs out and it
+   would otherwise sit on top of the lesson tiles. */
+.edgemark{position:fixed;right:20px;top:50%;transform:translateY(-50%);
+  z-index:5;pointer-events:none;color:var(--ink);opacity:.9}
+.edgemark svg{display:block;height:150px;width:auto}
+@media(max-width:1100px){.edgemark{display:none}}
