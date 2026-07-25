@@ -79,7 +79,9 @@
     pulling = true;
     if (Array.isArray(v.favorites)) localStorage.setItem("favorites", JSON.stringify(v.favorites));
     if (Array.isArray(v.selected))  localStorage.setItem("selected",  JSON.stringify(v.selected));
-    if (v.lang) localStorage.setItem("lang", v.lang);
+    // keep both labels in step, or the shared setting and the account's copy
+    // drift apart and the page reverts to the account's older language
+    if (v.lang) { localStorage.setItem("lang", v.lang); localStorage.setItem("mn_lang", v.lang); }
     if (Array.isArray(v.scoredWords)) {
       // merge rather than replace: a word paid for on either device stays paid
       const merged = new Set(JSON.parse(localStorage.getItem("scoredWords") || "[]"));

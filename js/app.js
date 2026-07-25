@@ -705,7 +705,9 @@ function persist(){
 /* cloud.js calls this after pulling an account's saved words down, so the
    screen shows them without needing a reload. */
 window.reloadFromCloud = function(){
-  state.lang = localStorage.getItem("lang") || state.lang;
+  // the shared setting first, same as at startup — otherwise a sync from the
+  // account would quietly undo a language just picked on the sister site
+  state.lang = localStorage.getItem("mn_lang") || localStorage.getItem("lang") || state.lang;
   state.selected  = new Set(JSON.parse(localStorage.getItem("selected")  || "[]"));
   state.favorites = new Set(JSON.parse(localStorage.getItem("favorites") || "[]"));
   applyI18n();
