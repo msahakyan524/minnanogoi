@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>語彙 — N5 / N4 vocabulary</title>
+  <title>Միննա の 語彙</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <!-- exactly two families at exactly two weights: Noto Sans JP for body text,
        Shippori Mincho for headings and Japanese. Nothing else is used. -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Shippori+Mincho:wght@400;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/styles.css?v=48" />
+  <link rel="stylesheet" href="css/styles.css?v=49" />
 </head>
 <body data-view="home">
   <!-- ===== Top bar ===== -->
@@ -36,7 +36,7 @@
            the other tucks into its bottom-right corner. Tapping the small one
            swaps them, then hands over to that site. -->
       <div class="sites" id="siteSwitch">
-        <button class="sites__here" id="brandBtn" title="goi — home" aria-label="Home">
+        <button class="sites__here" id="brandBtn" title="Միննա の 語彙 — home" aria-label="Home">
           <img src="favicon.svg" alt="" class="sites__flower" />
         </button>
         <a class="sites__there" id="goKanji"
@@ -54,6 +54,9 @@
     <!-- ===== HOME: pick many lessons (drag to select) ===== -->
     <section class="view view--home" data-screen="home">
       <div class="hero">
+        <!-- Site name, mirroring the kanji sister's "Միննա の 漢字": the word
+             mark, then the flower that carries the 語彙 itself. -->
+        <p class="hero__brand"><span>Միննա の</span><img src="favicon.svg" alt="語彙" /></p>
         <h1 class="hero__title" data-i18n="home_title">Choose what to study</h1>
         <p class="hero__sub" data-i18n="home_sub">Drag your finger across lessons to grab several at once. Mix N5 and N4 freely.</p>
       </div>
