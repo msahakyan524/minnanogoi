@@ -732,9 +732,22 @@ function shuffledCopy(arr){
 
 /* decoyFrom: where the wrong options come from. A replay round has only the
    missed words left, so its decoys keep coming from the whole original deck. */
+/* Each word only once. The same word appears in more than one lesson, so
+   picking two lessons can hand us the same word twice — and being asked it
+   twice in one round feels broken. */
+function quizPool(words){
+  const seen = new Set();
+  return (words || []).filter(w => {
+    if(!w || !quizMeaning(w) || !w.jp) return false;
+    if(seen.has(w.jp)) return false;
+    seen.add(w.jp);
+    return true;
+  });
+}
+
 function startQuiz(words, decoyFrom){
-  const asked = words.filter(quizMeaning);
-  const pool  = (decoyFrom || words).filter(quizMeaning);
+  const asked = quizPool(words);
+  const pool  = quizPool(decoyFrom || words);
   // the Quiz button is already disabled below four words; this is the backstop
   if(!asked.length || pool.length < 4) return;
   quiz.items = shuffledCopy(asked);
