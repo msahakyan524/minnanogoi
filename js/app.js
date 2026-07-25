@@ -1,6 +1,10 @@
 /* ================= State ================= */
 const state = {
-  lang: localStorage.getItem("lang") || "hy",   // Armenian unless you pick otherwise
+  /* "mn_lang" is shared with the kanji sister (same web address = same browser
+     storage), so the language you pick on either site is the language both
+     open in. "lang" stays as a fallback for anyone who chose before that, and
+     is kept in step because the account sync still reads it. */
+  lang: localStorage.getItem("mn_lang") || localStorage.getItem("lang") || "hy",
   selected: new Set(JSON.parse(localStorage.getItem("selected") || "[]")), // "book|lesson"
   specified: new Set(),   // word ids chosen in "specify" (subset of selected lessons)
   deck: [], index: 0, flipped: false,
@@ -660,26 +664,10 @@ function initSiteSwitch(){
   const link = $("#goKanji");
   if(!box || !link) return;
 
-  /* Carry the chosen language across. Both sites sit on the same address, so
-     they share one storage box — they just label the language differently:
-     this site keeps it under "lang", the kanji site under "mk_lang". */
-  const handOverLanguage = () => {
-    try { if(state.lang) localStorage.setItem("mk_lang", state.lang); } catch(e){}
-  };
-  const adoptLanguageFromSister = () => {
-    try {
-      const theirs = localStorage.getItem("mk_lang");
-      if(theirs && theirs !== state.lang && UI[theirs]){
-        state.lang = theirs;
-        localStorage.setItem("lang", theirs);
-        applyI18n();          // no reload needed here: this site repaints on demand
-      }
-    } catch(e){}
-  };
-
+  /* The language needs no hand-off here: both sites read the same shared
+     "mn_lang" setting, so the sister already opens in the right language. */
   if(sessionStorage.getItem("cameFromSister")){
     sessionStorage.removeItem("cameFromSister");
-    adoptLanguageFromSister();
     box.classList.add("is-arriving");
     setTimeout(() => box.classList.remove("is-arriving"), 500);
   }
@@ -687,7 +675,7 @@ function initSiteSwitch(){
   link.addEventListener("click", (e) => {
     if(e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;  // let people open a new tab
     e.preventDefault();
-    const go = () => { sessionStorage.setItem("cameFromSister", "1"); handOverLanguage(); location.href = link.href; };
+    const go = () => { sessionStorage.setItem("cameFromSister", "1"); location.href = link.href; };
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if(reduced){ go(); return; }
     box.classList.add("is-swapping");
@@ -707,6 +695,7 @@ function applyTheme(){
 /* ================= Persist ================= */
 function persist(){
   localStorage.setItem("lang", state.lang);
+  localStorage.setItem("mn_lang", state.lang);   // the kanji sister reads this one
   localStorage.setItem("selected", JSON.stringify([...state.selected]));
   localStorage.setItem("favorites", JSON.stringify([...state.favorites]));
   // if someone is signed in, cloud.js mirrors this up to their account
