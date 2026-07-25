@@ -460,6 +460,14 @@ body[data-view="specify"] .actionbar{display:flex}
 .acc-head{display:flex;align-items:center;gap:16px;margin-bottom:20px}
 .acc-pic{width:56px;height:56px;flex:none;background:var(--bg);border:1px solid var(--line);padding:8px}
 .acc-name{font-family:var(--display);font-weight:700;font-size:16px}
+/* the name, with a pencil beside it */
+.acc-name-row{display:flex;align-items:center;gap:8px}
+.acc-name-edit{width:32px;height:32px;flex:none;font-size:14px;color:var(--ink-soft);
+  border:1px solid var(--line);background:var(--surface);cursor:pointer}
+.acc-name-edit:hover{color:var(--ink);border-color:var(--primary)}
+.acc-name-form{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.acc-input{min-height:44px;padding:8px 12px;font-family:inherit;font-size:16px;
+  color:var(--ink);background:var(--surface);border:1px solid var(--line);min-width:0;flex:1}
 .acc-pts{font-size:14px;color:var(--ink-soft)}
 
 /* ===== Leaderboard: name, picture, points — no emails ever ===== */

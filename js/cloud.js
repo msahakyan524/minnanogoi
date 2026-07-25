@@ -165,7 +165,8 @@
         code_five:"Create a code for 5 people",
         invites_note:"Nobody can sign up without a code.",
         no_codes:"No codes — nobody can sign up.",spent:"used up",
-        copy:"Tap to copy",copied:"Copied:",delete:"Delete code"},
+        copy:"Tap to copy",copied:"Copied:",delete:"Delete code",
+        rename:"Change your name",save:"Save",name_ok:"Name changed."},
     ru:{signin:"Вход",email:"Эл. почта",pass:"Пароль",name:"Имя",code:"Код приглашения",
         go:"Войти",make:"Создать аккаунт",have:"Уже есть аккаунт?",
         need:"Нет аккаунта?",out:"Выйти",pic:"Картинка",
@@ -182,7 +183,8 @@
         code_five:"Создать код на 5 человек",
         invites_note:"Без кода зарегистрироваться нельзя.",
         no_codes:"Кодов нет — никто не сможет зарегистрироваться.",spent:"использован",
-        copy:"Нажми, чтобы скопировать",copied:"Скопировано:",delete:"Удалить код"},
+        copy:"Нажми, чтобы скопировать",copied:"Скопировано:",delete:"Удалить код",
+        rename:"Изменить имя",save:"Сохранить",name_ok:"Имя изменено."},
     hy:{signin:"Մուտք",email:"Էլ. փոստ",pass:"Գաղտնաբառ",name:"Անուն",code:"Հրավերի կոդ",
         go:"Մուտք",make:"Ստեղծել հաշիվ",have:"Արդեն ունե՞ս հաշիվ",
         need:"Հաշիվ չունե՞ս",out:"Դուրս գալ",pic:"Նկար",
@@ -199,7 +201,8 @@
         code_five:"Ստեղծել կոդ 5 հոգու համար",
         invites_note:"Առանց կոդի ոչ ոք չի կարող գրանցվել։",
         no_codes:"Կոդ չկա — ոչ ոք չի կարող գրանցվել։",spent:"օգտագործված",
-        copy:"Սեղմիր՝ պատճենելու համար",copied:"Պատճենվեց՝",delete:"Ջնջել կոդը"},
+        copy:"Սեղմիր՝ պատճենելու համար",copied:"Պատճենվեց՝",delete:"Ջնջել կոդը",
+        rename:"Փոխել անունը",save:"Պահպանել",name_ok:"Անունը փոխվեց։"},
   };
   const t2 = (k) => {
     const l = localStorage.getItem("mn_lang") || localStorage.getItem("lang") || "hy";
@@ -273,7 +276,7 @@
     pic.addEventListener("click", () => togglePicker(out));
     head.appendChild(pic);
     const who = el("div", "acc-who");
-    who.appendChild(el("div", "acc-name", (profile && profile.display_name) || ""));
+    who.appendChild(nameRow());
     who.appendChild(el("div", "acc-pts", t2("pts") + ": " + Math.round((profile && profile.score_vocab) || 0)));
     head.appendChild(who);
     out.appendChild(head);
@@ -392,6 +395,56 @@
   function copyText(text) {
     try { navigator.clipboard.writeText(text); say(t2("copied") + " " + text); }
     catch (e) { say(text); }
+  }
+
+  /* ---------------- the name, which you can change ----------------
+     The profile is shared with the kanji site, so a rename here shows up
+     there too — one account, one name, one picture. The database has the
+     final say on politeness, and whatever it objects to is shown as-is. */
+  function nameRow() {
+    const wrap = el("div", "acc-name-row");
+    const shown = (profile && profile.display_name) || (me.email || "").split("@")[0];
+    wrap.appendChild(el("span", "acc-name", shown));
+    const edit = el("button", "acc-name-edit", "✎");
+    edit.title = t2("rename");
+    edit.setAttribute("aria-label", t2("rename"));
+    wrap.appendChild(edit);
+
+    edit.addEventListener("click", () => {
+      const form = document.createElement("form");
+      form.className = "acc-name-form";
+      const input = document.createElement("input");
+      input.className = "acc-input";
+      input.type = "text";
+      input.value = shown;
+      input.maxLength = 30;
+      input.setAttribute("aria-label", t2("name"));
+      const save = el("button", "btn btn--primary", t2("save"));
+      save.type = "submit";
+      form.appendChild(input);
+      form.appendChild(save);
+      wrap.replaceWith(form);
+      input.focus();
+      input.select();
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const value = input.value.trim().slice(0, 30);
+        if (!value) return;
+        save.disabled = true;
+        const { data, error } = await sb.from("profiles")
+          .update({ display_name: value }).eq("id", me.id)
+          .select("display_name").maybeSingle();
+        save.disabled = false;
+        if (error) { say(error.message, true); return; }
+        if (!data) { say(t2("pic_gone"), true); return; }
+        profile = Object.assign({}, profile, { display_name: data.display_name });
+        render();
+        paintTab();
+        say(t2("name_ok"));
+      });
+    });
+    return wrap;
   }
 
   /* ---------------- leaderboard ----------------
