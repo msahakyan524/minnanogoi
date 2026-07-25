@@ -471,6 +471,11 @@ body[data-view="specify"] .actionbar{display:flex}
   border:1px solid var(--line);color:var(--ink)}
 .acc-choice.is-on{border-color:var(--primary);background:var(--surface-2)}
 .acc-choice:active{transform:scale(.94)}
+/* "Upload a photo": a normal-looking button with the file input hidden inside,
+   so the whole thing is one finger-sized tap target */
+.acc-upload{display:flex;align-items:center;justify-content:center;
+  width:100%;margin-top:8px;position:relative;overflow:hidden;cursor:pointer}
+.acc-upload input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer}
 
 @media(max-width:560px){
   .acc-tab{width:36px;height:36px}

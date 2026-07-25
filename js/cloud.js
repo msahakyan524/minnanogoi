@@ -156,7 +156,8 @@
         pts:"Vocabulary points",board:"Leaderboard",
         board_off:"The leaderboard isn't switched on yet.",
         board_empty:"Nobody has points yet.",
-        board_note:"One point per word you have learned."},
+        board_note:"One point per word you have learned.",
+        upload:"Upload a photo",upload_bad:"Could not read that picture."},
     ru:{signin:"Вход",email:"Эл. почта",pass:"Пароль",name:"Имя",code:"Код приглашения",
         go:"Войти",make:"Создать аккаунт",have:"Уже есть аккаунт?",
         need:"Нет аккаунта?",out:"Выйти",pic:"Картинка",
@@ -164,7 +165,8 @@
         pts:"Очки словаря",board:"Таблица",
         board_off:"Таблица ещё не включена.",
         board_empty:"Пока ни у кого нет очков.",
-        board_note:"Одно очко за каждое выученное слово."},
+        board_note:"Одно очко за каждое выученное слово.",
+        upload:"Загрузить фото",upload_bad:"Не удалось прочитать эту картинку."},
     hy:{signin:"Մուտք",email:"Էլ. փոստ",pass:"Գաղտնաբառ",name:"Անուն",code:"Հրավերի կոդ",
         go:"Մուտք",make:"Ստեղծել հաշիվ",have:"Արդեն ունե՞ս հաշիվ",
         need:"Հաշիվ չունե՞ս",out:"Դուրս գալ",pic:"Նկար",
@@ -172,7 +174,8 @@
         pts:"Բառապաշարի միավորներ",board:"Աղյուսակ",
         board_off:"Աղյուսակը դեռ միացված չէ։",
         board_empty:"Դեռ ոչ ոք միավոր չունի։",
-        board_note:"Մեկ միավոր՝ սովորած յուրաքանչյուր բառի համար։"},
+        board_note:"Մեկ միավոր՝ սովորած յուրաքանչյուր բառի համար։",
+        upload:"Վերբեռնել լուսանկար",upload_bad:"Չհաջողվեց կարդալ այդ նկարը։"},
   };
   const t2 = (k) => {
     const l = localStorage.getItem("mn_lang") || localStorage.getItem("lang") || "hy";
@@ -304,6 +307,42 @@
       pick.appendChild(b);
     });
     out.appendChild(pick);
+
+    /* ...or your own photo, exactly as on the kanji sister. The <input> is
+       hidden inside the label, so the whole button is the tap target. */
+    const up = el("label", "btn btn--ghost acc-upload", t2("upload"));
+    const file = document.createElement("input");
+    file.type = "file";
+    file.accept = "image/*";
+    file.addEventListener("change", async () => {
+      const f = file.files && file.files[0];
+      if (!f) return;
+      try { saveAvatar(await shrink(f)); }
+      catch (e) { say(t2("upload_bad"), true); }
+    });
+    up.appendChild(file);
+    out.appendChild(up);
+  }
+
+  /* Squeeze any photo into a small square, so a picture from a phone camera
+     still fits in one database row instead of being rejected for size. */
+  function shrink(fileObj) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(fileObj);
+      const img = new Image();
+      img.onload = () => {
+        const S = 128;
+        const c = document.createElement("canvas");
+        c.width = S; c.height = S;
+        const side = Math.min(img.width, img.height);      // centre square crop
+        c.getContext("2d").drawImage(img, (img.width - side) / 2, (img.height - side) / 2,
+          side, side, 0, 0, S, S);
+        URL.revokeObjectURL(url);
+        resolve(c.toDataURL("image/jpeg", 0.8));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("bad image")); };
+      img.src = url;
+    });
   }
 
   async function saveAvatar(v) {
