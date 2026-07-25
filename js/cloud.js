@@ -68,7 +68,7 @@
     return {
       favorites: JSON.parse(localStorage.getItem("favorites") || "[]"),
       selected:  JSON.parse(localStorage.getItem("selected") || "[]"),
-      lang:      localStorage.getItem("lang") || "en",
+      lang:      localStorage.getItem("lang") || "hy",
     };
   }
   function applyVocab(v) {
@@ -155,7 +155,7 @@
         pts:"Բառապաշարի միավորներ",board:"Աղյուսակ"},
   };
   const t2 = (k) => {
-    const l = localStorage.getItem("lang") || "en";
+    const l = localStorage.getItem("lang") || "hy";
     return (STR[l] && STR[l][k]) || STR.en[k];
   };
 

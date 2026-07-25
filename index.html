@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hy">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
@@ -10,7 +10,7 @@
   <!-- exactly two families at exactly two weights: Noto Sans JP for body text,
        Shippori Mincho for headings and Japanese. Nothing else is used. -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Shippori+Mincho:wght@400;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/styles.css?v=50" />
+  <link rel="stylesheet" href="css/styles.css?v=51" />
 </head>
 <body data-view="home">
   <!-- ===== Top bar ===== -->
@@ -26,8 +26,8 @@
     </div>
 
     <div class="topbar__right">
-      <button class="pill" id="navFlashcards"><span data-i18n="flashcards">Flashcards</span></button>
-      <button class="pill pill--ghost" id="navLessons"><span data-i18n="lessons">Lessons</span></button>
+      <button class="pill" id="navFlashcards"><span data-i18n="flashcards">Քարտեր</span></button>
+      <button class="pill pill--ghost" id="navLessons"><span data-i18n="lessons">Դասեր</span></button>
 
       <!-- same account as the kanji site; shows your picture once signed in -->
       <button class="acc-tab" id="accTab" aria-label="Account" title="Account">☺</button>
@@ -57,8 +57,8 @@
         <!-- Site name, mirroring the kanji sister's "Միննա の 漢字": the word
              mark, then the flower that carries the 語彙 itself. -->
         <p class="hero__brand"><span>Միննա の</span><img src="favicon.svg" alt="語彙" /></p>
-        <h1 class="hero__title" data-i18n="home_title">Choose what to study</h1>
-        <p class="hero__sub" data-i18n="home_sub">Drag your finger across lessons to grab several at once. Mix N5 and N4 freely.</p>
+        <h1 class="hero__title" data-i18n="home_title">Ի՞նչ սովորենք</h1>
+        <p class="hero__sub" data-i18n="home_sub">Մատով քաշիր դասերի վրայով՝ մի քանիսը միանգամից ընտրելու համար։ Խառնիր N5 և N4։</p>
       </div>
       <div id="booksWrap" class="books"></div>
     </section>
@@ -67,12 +67,12 @@
     <section class="view view--specify" data-screen="specify">
       <div class="subhead">
         <button class="back" data-goto="home">←</button>
-        <h2 data-i18n="specify_title">Pick exact words</h2>
+        <h2 data-i18n="specify_title">Ընտրիր բառերը</h2>
       </div>
       <div class="specify-tools">
-        <input id="wordSearch" class="search" type="search" placeholder="Search…" />
-        <button class="mini" id="selectAllWords" data-i18n="select_all">Select all</button>
-        <button class="mini" id="clearWords" data-i18n="clear">Clear</button>
+        <input id="wordSearch" class="search" type="search" data-i18n-ph="search" placeholder="Որոնել…" />
+        <button class="mini" id="selectAllWords" data-i18n="select_all">Ընտրել բոլորը</button>
+        <button class="mini" id="clearWords" data-i18n="clear">Մաքրել</button>
       </div>
       <div id="specifyList" class="specify-list"></div>
     </section>
@@ -81,7 +81,7 @@
     <section class="view view--lessons" data-screen="lessons">
       <div class="subhead">
         <button class="back" data-goto="home">←</button>
-        <h2 data-i18n="lessons_title">Study one lesson</h2>
+        <h2 data-i18n="lessons_title">Մեկ դաս</h2>
       </div>
       <div id="singleBooks" class="books books--single"></div>
       <div id="lessonPreview" class="lesson-preview" hidden></div>
@@ -92,7 +92,7 @@
       <div class="subhead">
         <button class="back" data-goto="home">←</button>
         <div class="deck-meta">
-          <span id="quizTitle" data-i18n="quiz_title">Quiz</span>
+          <span id="quizTitle" data-i18n="quiz_title">Խաղ</span>
           <span id="quizProgress" class="deck-progress">0 / 0</span>
         </div>
       </div>
@@ -100,7 +100,7 @@
       <div id="quizPlay">
         <div class="quiz-card">
           <div id="quizWord" class="quiz-word"></div>
-          <p id="quizAsk" class="quiz-ask" data-i18n="quiz_ask"></p>
+          <p id="quizAsk" class="quiz-ask" data-i18n="quiz_ask">Ո՞րն է իմաստը</p>
         </div>
         <div id="quizOptions" class="quiz-options"></div>
       </div>
@@ -122,7 +122,7 @@
           <span id="deckTitle">Deck</span>
           <span id="deckProgress" class="deck-progress">0 / 0</span>
         </div>
-        <button class="mini" id="shuffleBtn"><span data-i18n="shuffle">Shuffle</span></button>
+        <button class="mini" id="shuffleBtn"><span data-i18n="shuffle">Խառնել</span></button>
       </div>
 
       <div class="card-zone">
@@ -141,19 +141,19 @@
                   <polygon points="12 2 15 9 22 9.5 16.5 14 18 21 12 17.5 6 21 7.5 14 2 9.5 9 9"/>
                 </svg>
               </button>
-              <div class="swipe-badge swipe-badge--known" id="badgeKnown"><span data-i18n="known">Known</span></div>
-              <div class="swipe-badge swipe-badge--again" id="badgeAgain"><span data-i18n="review">Review</span></div>
+              <div class="swipe-badge swipe-badge--known" id="badgeKnown"><span data-i18n="known">Գիտեմ</span></div>
+              <div class="swipe-badge swipe-badge--again" id="badgeAgain"><span data-i18n="review">Կրկնել</span></div>
               <div class="flashcard__inner">
                 <div class="flashcard__face flashcard__front" id="cardFront"></div>
                 <div class="flashcard__face flashcard__back" id="cardBack"></div>
               </div>
             </div>
-            <p class="tap-hint" data-i18n="tap_hint">Tap to flip · up: know, down: don't know</p>
+            <p class="tap-hint" data-i18n="tap_hint">Սեղմիր՝ շրջելու համար · վերև՝ գիտեմ, ներքև՝ չգիտեմ</p>
           </div>
 
           <div class="card-controls" id="cardControls">
             <button class="round" id="prevBtn" aria-label="Previous">‹</button>
-            <button class="flip" id="flipBtn" data-i18n="flip">Flip</button>
+            <button class="flip" id="flipBtn" data-i18n="flip">Շրջել</button>
             <button class="round" id="nextBtn" aria-label="Next">›</button>
           </div>
         </div>
@@ -175,13 +175,13 @@
   <!-- ===== Sticky action bar (home / specify) ===== -->
   <div class="actionbar" id="actionbar">
     <div class="actionbar__count">
-      <span id="selCount">0</span> <span data-i18n="words_selected">words selected</span>
-      <button class="linkbtn" id="deselectAllBtn" data-i18n="deselect_all" hidden>Deselect all</button>
+      <span id="selCount">0</span> <span data-i18n="words_selected">բառ ընտրված</span>
+      <button class="linkbtn" id="deselectAllBtn" data-i18n="deselect_all" hidden>Ապընտրել բոլորը</button>
     </div>
     <div class="actionbar__btns">
-      <button class="btn btn--ghost" id="specifyBtn" data-i18n="specify_btn">Specify words</button>
-      <button class="btn btn--ghost" id="quizBtn" data-i18n="quiz_btn">Quiz</button>
-      <button class="btn btn--primary" id="studyBtn" data-i18n="study_btn">Study →</button>
+      <button class="btn btn--ghost" id="specifyBtn" data-i18n="specify_btn">Ընտրել բառերը</button>
+      <button class="btn btn--ghost" id="quizBtn" data-i18n="quiz_btn">Խաղ</button>
+      <button class="btn btn--primary" id="studyBtn" data-i18n="study_btn">Սովորել →</button>
     </div>
   </div>
 
@@ -224,10 +224,10 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="js/avatars.js?v=48"></script>
-  <script src="js/data.js?v=49"></script>
+  <script src="js/data.js?v=50"></script>
   <script src="js/words2.js?v=48"></script>
   <script src="js/images.js?v=48"></script>
-  <script src="js/app.js?v=49"></script>
-  <script src="js/cloud.js?v=48"></script>
+  <script src="js/app.js?v=50"></script>
+  <script src="js/cloud.js?v=49"></script>
 </body>
 </html>

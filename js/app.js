@@ -1,6 +1,6 @@
 /* ================= State ================= */
 const state = {
-  lang: localStorage.getItem("lang") || "en",
+  lang: localStorage.getItem("lang") || "hy",   // Armenian unless you pick otherwise
   selected: new Set(JSON.parse(localStorage.getItem("selected") || "[]")), // "book|lesson"
   specified: new Set(),   // word ids chosen in "specify" (subset of selected lessons)
   deck: [], index: 0, flipped: false,
@@ -75,7 +75,9 @@ function selectedWords(){
 /* ================= i18n ================= */
 function applyI18n(){
   $$("[data-i18n]").forEach(el => el.textContent = t(el.dataset.i18n));
+  $$("[data-i18n-ph]").forEach(el => el.placeholder = t(el.dataset.i18nPh));
   $("#langSelect").value = state.lang;
+  document.documentElement.lang = state.lang;   // keep the page's own tag honest
   // refresh dynamic screens that show translations
   if(document.body.dataset.view === "specify") renderSpecify();
   if(document.body.dataset.view === "cards") renderCard();
