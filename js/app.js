@@ -519,6 +519,9 @@ function wrongByLesson(){
 function finishDeck(){
   const total = state.deck.length;
   const unknownCount = total - state.known.size;   // review + anything left unmarked
+  // one point per word known; lands in score_vocab, separate from kanji's score
+  if(typeof window.cloudPoints === "function") window.cloudPoints(state.known.size);
+  if(typeof window.cloudSession === "function") window.cloudSession(state.known.size, total);
   $("#doneTitle").textContent = "";
   $("#doneSub").textContent = "";
   const graphic = $("#doneGraphic");
@@ -636,7 +639,18 @@ function persist(){
   localStorage.setItem("lang", state.lang);
   localStorage.setItem("selected", JSON.stringify([...state.selected]));
   localStorage.setItem("favorites", JSON.stringify([...state.favorites]));
+  // if someone is signed in, cloud.js mirrors this up to their account
+  if(typeof window.cloudPush === "function") window.cloudPush();
 }
+
+/* cloud.js calls this after pulling an account's saved words down, so the
+   screen shows them without needing a reload. */
+window.reloadFromCloud = function(){
+  state.lang = localStorage.getItem("lang") || state.lang;
+  state.selected  = new Set(JSON.parse(localStorage.getItem("selected")  || "[]"));
+  state.favorites = new Set(JSON.parse(localStorage.getItem("favorites") || "[]"));
+  applyI18n();
+};
 
 /* bring back an in-progress flashcard session after a page refresh.
    Returns true if a session was actually restored. */
