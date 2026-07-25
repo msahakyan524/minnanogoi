@@ -123,7 +123,6 @@ function bookBlock(book, single=false){
   wrap.innerHTML = `
     <div class="book__head">
       <span class="book__name">${book.name}</span>
-      <span class="badge ${book.level==='n4'?'badge--n4':''}">${book.level.toUpperCase()}</span>
       <span class="book__hint">${activeCount ? activeCount + " ready" : "coming soon"}</span>
     </div>`;
   const grid = document.createElement("div");
@@ -136,10 +135,36 @@ function bookBlock(book, single=false){
   return wrap;
 }
 
+/* Books grouped under their JLPT level, N5 first. The order inside a level
+   just follows the BOOKS array, which already runs Minna then Kirari. */
+const LEVELS = ["n5", "n4"];
+function booksByLevel(){
+  return LEVELS
+    .map(lv => ({ level: lv, books: BOOKS.filter(b => b.level === lv) }))
+    .filter(g => g.books.length);
+}
+function levelHead(level){
+  const ids = BOOKS.filter(b => b.level === level).map(b => b.id);
+  const n = WORDS.filter(w => ids.includes(w.b)).length;
+  const h = document.createElement("div");
+  h.className = "level-head";
+  h.innerHTML = `<span class="level-head__n">${level.toUpperCase()}</span>` +
+    `<span class="level-head__c">${n} ${n === 1 ? t("word") : t("word_plural")}</span>`;
+  return h;
+}
+/* one level section: heading, then that level's books */
+function levelSection(group, single){
+  const sec = document.createElement("section");
+  sec.className = "level";
+  sec.appendChild(levelHead(group.level));
+  group.books.forEach(b => sec.appendChild(bookBlock(b, single)));
+  return sec;
+}
+
 function renderBooks(){
   const wrap = $("#booksWrap");
   wrap.innerHTML = "";
-  BOOKS.forEach(b => wrap.appendChild(bookBlock(b)));
+  booksByLevel().forEach(g => wrap.appendChild(levelSection(g, false)));
   if(!wrap.dataset.dragReady){ enableDragSelect(wrap); wrap.dataset.dragReady = "1"; }
   updateActionbar();
 }
@@ -263,17 +288,19 @@ function renderSpecify(){
 function renderSingleBooks(){
   const wrap = $("#singleBooks");
   wrap.innerHTML = "";
-  BOOKS.forEach(book => {
-    const block = bookBlock(book, true);
+  booksByLevel().forEach(g => {
+    const sec = levelSection(g, true);
     // single-select behaviour: tap shows preview
-    block.querySelectorAll(".tile").forEach(tile => {
-      tile.classList.remove("is-selected");
-      tile.addEventListener("click", () => {
-        if(tile.dataset.fill !== "1") return;
-        showLessonPreview(tile.dataset.book, +tile.dataset.lesson, block);
+    sec.querySelectorAll(".book").forEach(block => {
+      block.querySelectorAll(".tile").forEach(tile => {
+        tile.classList.remove("is-selected");
+        tile.addEventListener("click", () => {
+          if(tile.dataset.fill !== "1") return;
+          showLessonPreview(tile.dataset.book, +tile.dataset.lesson, block);
+        });
       });
     });
-    wrap.appendChild(block);
+    wrap.appendChild(sec);
   });
   $("#lessonPreview").hidden = true;
 }

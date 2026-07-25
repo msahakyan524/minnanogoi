@@ -127,13 +127,22 @@ body[data-view="cards"]   .view--cards{display:block}
 #deckTitle{font-weight:700;font-family:var(--display)}
 .deck-progress{font-size:12px;color:var(--ink-soft)}
 
+/* ===== Level groups ===== */
+/* Books sit under their JLPT level: N5 first, then N4. The level used to be
+   a badge on every book, which repeated it four times; as a heading it is
+   said once per group. */
+.level{margin-bottom:32px}
+.level:last-child{margin-bottom:0}
+.level-head{display:flex;align-items:baseline;gap:8px;
+  margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.level-head__n{font-family:var(--display);font-weight:700;font-size:16px;letter-spacing:2px}
+.level-head__c{margin-left:auto;font-size:12px;color:var(--ink-soft)}
+
 /* ===== Book + lesson grid ===== */
 .book{margin-bottom:22px}
+.level .book:last-child{margin-bottom:0}
 .book__head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
 .book__name{font-family:var(--display);font-weight:700;font-size:16px}
-.badge{font-size:12px;font-weight:700;padding:3px 8px;border-radius:var(--r-sm);
-  background:var(--surface-2);color:var(--ink-soft);letter-spacing:.4px;border:1px solid var(--line)}
-.badge--n4{background:var(--surface-2);color:var(--primary)}
 .book__hint{margin-left:auto;font-size:12px;color:var(--ink-soft)}
 
 .lessons-grid{
