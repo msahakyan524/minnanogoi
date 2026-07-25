@@ -2,7 +2,7 @@
 const BOOKS = [
   { id:"minna1",  name:"Minna no Nihongo I",  level:"n5", lessons:25, start:1  },
   { id:"minna2",  name:"Minna no Nihongo II", level:"n4", lessons:25, start:26 },
-  { id:"kirariN5",name:"Kirari Nihongo N5",   level:"n5", lessons:15, start:1  },
+  { id:"kirariN5",name:"Kirari Nihongo N5",   level:"n5", lessons:13, start:1  },
   { id:"kirariN4",name:"Kirari Nihongo N4",   level:"n4", lessons:14, start:1  },
 ];
 
