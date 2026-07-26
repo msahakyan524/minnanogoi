@@ -484,6 +484,15 @@ body[data-view="specify"] .actionbar{display:flex}
 .rank-name{flex:1;min-width:0;font-size:16px;overflow:hidden;
   text-overflow:ellipsis;white-space:nowrap}
 .rank-pts{font-weight:700;font-size:16px}
+/* ===== My progress: one bar per level ===== */
+.prog-list{display:flex;flex-direction:column;gap:8px}
+.prog-row{display:flex;align-items:center;gap:12px;min-height:44px;
+  padding:8px 12px;background:var(--surface);border:1px solid var(--line)}
+.prog-lv{font-weight:700;font-size:14px;min-width:32px}
+.prog-bar{flex:1;height:8px;background:var(--surface-2);overflow:hidden}
+.prog-bar span{display:block;height:100%;background:var(--primary);
+  transition:width .4s cubic-bezier(.4,0,.2,1)}
+.prog-n{font-size:14px;color:var(--ink-soft);min-width:72px;text-align:right}
 /* ===== Admin panel: people and invite codes ===== */
 .acc-admin{width:100%;margin-top:16px}
 .acc-admin-box{margin-top:16px}

@@ -100,6 +100,7 @@
     if (error) return;                       // migration not run yet: stay offline
     if (data && data.vocab && Object.keys(data.vocab).length) applyVocab(data.vocab);
     else push();                             // first sign-in: seed from this device
+    savePoints();                            // count everything known so far, incl. before signing in
   }
 
   function push() {
@@ -113,16 +114,41 @@
   }
   window.cloudPush = push;                   // app.js calls this after it saves
 
-  /* ---------- points ---------- */
-  /* One point per word marked known. Written to score_vocab, which is a
-     different column from the kanji site's score — same account, two ranks. */
-  async function addPoints(n) {
-    if (!sb || !me || !n) return;
-    const next = Number((profile && profile.score_vocab) || 0) + n;
-    profile = Object.assign({}, profile, { score_vocab: next });
-    await sb.from("profiles").update({ score_vocab: next }).eq("id", me.id);
+  /* ---------- points ----------
+     A harder word is worth more, exactly as on the kanji sister: every level
+     up doubles the value. N5 = 1, N4 = 2 (N3 = 4, N2 = 8, N1 = 16 if books
+     for those are ever added) — so one N5 word counts half an N4 word. A
+     word's level is its book's level; see BOOKS in data.js.
+
+     The total is RECOUNTED from the words you know, never added up step by
+     step. A running tally drifts the moment one device misses an update, and
+     words learned before signing in would never be paid for at all — which is
+     why the score sat at zero. Written to score_vocab, a different column
+     from the kanji site's score: same account, two ranks. */
+  const LEVEL_POINTS = { n5: 1, n4: 2, n3: 4, n2: 8, n1: 16 };
+
+  function bookLevel(bookId) {
+    const b = (typeof BOOKS !== "undefined" ? BOOKS : []).find((x) => x.id === bookId);
+    return (b && b.level) || "n5";
   }
-  window.cloudPoints = addPoints;
+  /* a word id is "book-lesson-index" (data.js), so the book is the first piece */
+  function knownIds() {
+    try { return JSON.parse(localStorage.getItem("scoredWords") || "[]"); }
+    catch (e) { return []; }
+  }
+  function scoreVocab() {
+    return knownIds().reduce(
+      (n, id) => n + (LEVEL_POINTS[bookLevel(String(id).split("-")[0])] || 1), 0);
+  }
+
+  async function savePoints() {
+    if (!sb || !me) return;
+    const points = scoreVocab();
+    if (profile && Number(profile.score_vocab) === points) return;
+    profile = Object.assign({}, profile, { score_vocab: points });
+    await sb.from("profiles").update({ score_vocab: points }).eq("id", me.id);
+  }
+  window.cloudPoints = savePoints;
 
   async function logSession(known, total) {
     if (!sb || !me) return;
@@ -154,9 +180,13 @@
         need:"No account yet?",out:"Sign out",pic:"Picture",
         why:"Sign in to keep your words on every device.",
         pts:"Vocabulary points",board:"Leaderboard",
+        prog:"My progress",prog_none:"No words loaded.",
+        prog_start:"No study yet — start with the flashcards.",
+        streak:"Day streak",session:"Session",
+        today:"today",yesterday:"yesterday",days_ago:"days ago",
         board_off:"The leaderboard isn't switched on yet.",
         board_empty:"Nobody has points yet.",
-        board_note:"One point per word you have learned.",
+        board_note:"An N5 word is 1 point, an N4 word 2. Kanji is ranked separately.",
         upload:"Upload a photo",upload_bad:"Could not read that picture.",
         pic_ok:"Picture saved.",pic_bad:"Could not save the picture:",
         pic_gone:"The picture was not saved — sign out and back in.",
@@ -172,9 +202,13 @@
         need:"Нет аккаунта?",out:"Выйти",pic:"Картинка",
         why:"Войдите, чтобы слова были на всех устройствах.",
         pts:"Очки словаря",board:"Таблица",
+        prog:"Мой прогресс",prog_none:"Слова не загружены.",
+        prog_start:"Занятий ещё нет — начни с карточек.",
+        streak:"Дней подряд",session:"Занятие",
+        today:"сегодня",yesterday:"вчера",days_ago:"дн. назад",
         board_off:"Таблица ещё не включена.",
         board_empty:"Пока ни у кого нет очков.",
-        board_note:"Одно очко за каждое выученное слово.",
+        board_note:"Слово N5 — 1 очко, N4 — 2. Кандзи считаются отдельно.",
         upload:"Загрузить фото",upload_bad:"Не удалось прочитать эту картинку.",
         pic_ok:"Картинка сохранена.",pic_bad:"Не удалось сохранить картинку:",
         pic_gone:"Картинка не сохранилась — выйди и войди снова.",
@@ -190,9 +224,13 @@
         need:"Հաշիվ չունե՞ս",out:"Դուրս գալ",pic:"Նկար",
         why:"Մուտք գործիր՝ բառերը բոլոր սարքերում պահելու համար։",
         pts:"Բառապաշարի միավորներ",board:"Աղյուսակ",
+        prog:"Իմ առաջընթացը",prog_none:"Բառեր չեն բեռնվել։",
+        prog_start:"Դեռ պարապմունք չկա — սկսիր քարտերից։",
+        streak:"Օրերի շարք",session:"Պարապմունք",
+        today:"այսօր",yesterday:"երեկ",days_ago:"օր առաջ",
         board_off:"Աղյուսակը դեռ միացված չէ։",
         board_empty:"Դեռ ոչ ոք միավոր չունի։",
-        board_note:"Մեկ միավոր՝ սովորած յուրաքանչյուր բառի համար։",
+        board_note:"N5 բառ՝ 1 միավոր, N4՝ 2։ Կանջին հաշվվում է առանձին։",
         upload:"Վերբեռնել լուսանկար",upload_bad:"Չհաջողվեց կարդալ այդ նկարը։",
         pic_ok:"Նկարը պահվեց։",pic_bad:"Չհաջողվեց պահել նկարը՝",
         pic_gone:"Նկարը չպահվեց — դուրս եկ ու նորից մուտք գործիր։",
@@ -277,9 +315,13 @@
     head.appendChild(pic);
     const who = el("div", "acc-who");
     who.appendChild(nameRow());
-    who.appendChild(el("div", "acc-pts", t2("pts") + ": " + Math.round((profile && profile.score_vocab) || 0)));
+    who.appendChild(el("div", "acc-pts", t2("pts") + ": " + scoreVocab()));
     head.appendChild(who);
     out.appendChild(head);
+
+    const prog = el("div", "acc-board");
+    out.appendChild(prog);
+    renderProgress(prog);
 
     const board = el("div", "acc-board");
     out.appendChild(board);
@@ -445,6 +487,88 @@
       });
     });
     return wrap;
+  }
+
+  /* ---------------- my own progress ----------------
+     Split by level, because N5 and N4 are two different climbs and one merged
+     bar hides which of them you are actually on. Word counts come from the
+     device (the same list the score is counted from); the study history comes
+     from this site's own rows — study_sessions.app = 'vocab' — so the kanji
+     sister's sessions never show up here. */
+  async function renderProgress(box) {
+    box.innerHTML = "";
+    box.appendChild(el("h3", "acc-board__title", t2("prog")));
+
+    const known = new Set(knownIds());
+    const tally = new Map();                 // "n5" -> { known, total }
+    (typeof WORDS !== "undefined" ? WORDS : []).forEach((w) => {
+      const lv = bookLevel(w.b);
+      if (!tally.has(lv)) tally.set(lv, { known: 0, total: 0 });
+      const t = tally.get(lv);
+      t.total++;
+      if (known.has(w.id)) t.known++;
+    });
+
+    if (!tally.size) {
+      box.appendChild(el("p", "acc-board__note", t2("prog_none")));
+      return;
+    }
+
+    const list = el("div", "prog-list");
+    [...tally.keys()].sort().reverse().forEach((lv) => {   // n5 first, then n4
+      const t = tally.get(lv);
+      const pct = t.total ? Math.round((t.known / t.total) * 100) : 0;
+      const row = el("div", "prog-row");
+      row.appendChild(el("span", "prog-lv", lv.toUpperCase()));
+      const bar = el("div", "prog-bar");
+      bar.appendChild(el("span")).style.width = pct + "%";
+      row.appendChild(bar);
+      row.appendChild(el("span", "prog-n", t.known + " / " + t.total));
+      list.appendChild(row);
+    });
+    box.appendChild(list);
+
+    const { data, error } = await sb.from("study_sessions")
+      .select("known, total, created_at")
+      .eq("app", "vocab")
+      .order("created_at", { ascending: false }).limit(7);
+    if (error) return;
+    const sess = data || [];
+    if (!sess.length) {
+      box.appendChild(el("p", "acc-board__note", t2("prog_start")));
+      return;
+    }
+    box.appendChild(el("p", "acc-board__note", t2("streak") + ": " + streak(sess)));
+    const hist = el("div", "rank-list");
+    sess.forEach((s) => {
+      const r = el("div", "rank-row");
+      r.appendChild(el("span", "rank-name", t2("session")));
+      r.appendChild(el("span", "rank-pts", s.known + "/" + s.total));
+      r.appendChild(el("span", "rank-no", when(s.created_at)));
+      hist.appendChild(r);
+    });
+    box.appendChild(hist);
+  }
+
+  /* how many days in a row (counting back from today) had a session */
+  function streak(sessions) {
+    const days = new Set(sessions.map((s) => String(s.created_at).slice(0, 10)));
+    let n = 0;
+    const d = new Date();
+    for (;;) {
+      const key = d.toISOString().slice(0, 10);
+      if (!days.has(key)) break;
+      n++;
+      d.setDate(d.getDate() - 1);
+    }
+    return n;
+  }
+
+  function when(iso) {
+    const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+    if (days <= 0) return t2("today");
+    if (days === 1) return t2("yesterday");
+    return days + " " + t2("days_ago");
   }
 
   /* ---------------- leaderboard ----------------

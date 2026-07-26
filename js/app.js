@@ -568,10 +568,11 @@ function wrongByLesson(){
   return [...tally.values()].sort((a, b) => b.count - a.count);
 }
 
-/* One word, one point — ever. Studying the same deck again is good for you but
-   it isn't new knowledge, so remember which words have already been paid for
-   and only credit the ones that haven't. (The kanji site scores separately, so
-   a word known on both sites still counts on both.) */
+/* One word, counted once — ever. Studying the same deck again is good for you
+   but it isn't new knowledge, so this list remembers every word you have ever
+   marked known. What each one is WORTH is decided in cloud.js by its level:
+   an N4 word counts double an N5 one. (The kanji site scores separately, so a
+   word known on both sites still counts on both.) */
 const SCORED_KEY = "scoredWords";
 function loadScoredWords(){
   try { return new Set(JSON.parse(localStorage.getItem(SCORED_KEY) || "[]")); }
@@ -583,7 +584,7 @@ function creditNewlyKnown(){
   state.known.forEach(id => { if(!scored.has(id)){ scored.add(id); fresh++; } });
   if(fresh){
     try { localStorage.setItem(SCORED_KEY, JSON.stringify([...scored])); } catch(e){}
-    if(typeof window.cloudPoints === "function") window.cloudPoints(fresh);
+    if(typeof window.cloudPoints === "function") window.cloudPoints();
   }
   return fresh;
 }
