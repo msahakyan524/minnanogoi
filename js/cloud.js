@@ -141,12 +141,18 @@
       (n, id) => n + (LEVEL_POINTS[bookLevel(String(id).split("-")[0])] || 1), 0);
   }
 
-  async function savePoints() {
-    if (!sb || !me) return;
-    const points = scoreVocab();
-    if (profile && Number(profile.score_vocab) === points) return;
-    profile = Object.assign({}, profile, { score_vocab: points });
-    await sb.from("profiles").update({ score_vocab: points }).eq("id", me.id);
+  /* called on every swipe, so wait for the burst to settle — same trick as
+     push() — and skip the write entirely when the total has not moved */
+  let pointsTimer = null;
+  function savePoints() {
+    clearTimeout(pointsTimer);
+    pointsTimer = setTimeout(async () => {
+      if (!sb || !me) return;
+      const points = scoreVocab();
+      if (profile && Number(profile.score_vocab) === points) return;
+      profile = Object.assign({}, profile, { score_vocab: points });
+      await sb.from("profiles").update({ score_vocab: points }).eq("id", me.id);
+    }, 900);
   }
   window.cloudPoints = savePoints;
 
@@ -583,16 +589,20 @@
       box.appendChild(el("p", "acc-board__note", t2("board_off")));
       return;
     }
-    const rows = (data || []).slice()
+    /* your own row comes from this device, not the view: the write that
+       settles your score is held back a moment, so the view can still be a
+       beat behind and show a lower number than the one just above it */
+    const myName = (profile && profile.display_name) || "";
+    const rows = (data || [])
+      .map((r) => (r.display_name === myName ? Object.assign({}, r, { score_vocab: scoreVocab() }) : r))
       .sort((a, b) => (b.score_vocab || 0) - (a.score_vocab || 0));
     if (!rows.length) {
       box.appendChild(el("p", "acc-board__note", t2("board_empty")));
       return;
     }
-    const mine = (profile && profile.display_name) || "";
     const list = el("div", "rank-list");
     rows.forEach((r, i) => {
-      const row = el("div", "rank-row" + (r.display_name === mine ? " is-me" : ""));
+      const row = el("div", "rank-row" + (r.display_name === myName ? " is-me" : ""));
       row.appendChild(el("span", "rank-no", "#" + (i + 1)));
       row.appendChild(avatarBox(r.avatar, "ava--sm"));
       row.appendChild(el("span", "rank-name", r.display_name || "—"));

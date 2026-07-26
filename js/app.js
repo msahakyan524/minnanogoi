@@ -477,7 +477,7 @@ function shuffleDeck(){
 function markCard(isKnown){
   const w = state.deck[state.index];
   if(!w) return;
-  if(isKnown){ state.known.add(w.id); state.review.delete(w.id); }
+  if(isKnown){ state.known.add(w.id); state.review.delete(w.id); creditWord(w.id); }
   else { state.review.add(w.id); state.known.delete(w.id); }
   if(state.index < state.deck.length-1){ state.index++; renderCard(); }
   else finishDeck();
@@ -578,14 +578,32 @@ function loadScoredWords(){
   try { return new Set(JSON.parse(localStorage.getItem(SCORED_KEY) || "[]")); }
   catch(e){ return new Set(); }
 }
+function saveScoredWords(scored){
+  try { localStorage.setItem(SCORED_KEY, JSON.stringify([...scored])); } catch(e){}
+  // cloud.js debounces both of these, so swiping fast is still one write
+  if(typeof window.cloudPoints === "function") window.cloudPoints();
+  if(typeof window.cloudPush === "function") window.cloudPush();
+}
+
+/* Credit a word the moment you swipe it, not at the end of the deck. A deck
+   can be hundreds of words long and is often put down half-way; crediting
+   only on the very last card threw away every session that never reached it.
+   Swiping a word you already know again costs nothing — the list above is
+   what stops it counting twice. */
+function creditWord(id){
+  const scored = loadScoredWords();
+  if(scored.has(id)) return;
+  scored.add(id);
+  saveScoredWords(scored);
+}
+
+/* belt and braces: catches anything marked before this ran (a session
+   restored from a refresh, say) when the deck does reach its end */
 function creditNewlyKnown(){
   const scored = loadScoredWords();
   let fresh = 0;
   state.known.forEach(id => { if(!scored.has(id)){ scored.add(id); fresh++; } });
-  if(fresh){
-    try { localStorage.setItem(SCORED_KEY, JSON.stringify([...scored])); } catch(e){}
-    if(typeof window.cloudPoints === "function") window.cloudPoints();
-  }
+  if(fresh) saveScoredWords(scored);
   return fresh;
 }
 
@@ -904,6 +922,19 @@ function finishQuiz(){
   $("#quizRestartBtn").textContent = t("restart");
 }
 
+/* One-time rescue. Until now a word only counted when a deck was played all
+   the way to its last card, so a session put down half-way was never paid
+   for. The words marked in it are still in the saved session, so credit them
+   on the way in. Harmless to run every time: already-counted words are
+   ignored, and from now on each swipe credits itself anyway. */
+function rescueSavedSession(){
+  let session;
+  try { session = JSON.parse(localStorage.getItem("session") || "null"); }
+  catch(e){ return; }
+  if(!session || !Array.isArray(session.known)) return;
+  session.known.forEach(id => { if(wordById.has(id)) creditWord(id); });
+}
+
 /* bring back an in-progress flashcard session after a page refresh.
    Returns true if a session was actually restored. */
 function restoreSession(){
@@ -936,6 +967,7 @@ function init(){
   initSiteSwitch();
   renderBooks();
   applyI18n();
+  rescueSavedSession();                // pay for anything a half-finished deck never credited
   const restored = restoreSession();   // put a refreshed page back where it left off
   history.replaceState({view: restored ? "cards" : "home"}, ""); // first history step
   window.addEventListener("popstate", e => setView((e.state && e.state.view) || "home"));
