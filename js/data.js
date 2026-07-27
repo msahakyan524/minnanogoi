@@ -20,7 +20,8 @@ const UI = {
     word:"word",word_plural:"words",correct:"Correct",wrong:"Wrong",lesson_word:"Lesson",
     quiz_btn:"Quiz",quiz_title:"Quiz",quiz_ask:"Which is the meaning?",
     quiz_again:"Repeat the mistakes",quiz_need:"A quiz needs at least 4 words.",
-    quiz_score:"right out of",search:"Search…"},
+    quiz_score:"right out of",search:"Search…",
+    full_screen:"Full screen",exit_full:"Back to the window"},
   ru:{flashcards:"Карточки",lessons:"Уроки",home_title:"Что будем учить?",
     home_sub:"Проведите пальцем по урокам, чтобы выбрать сразу несколько. Смешивайте N5 и N4.",
     specify_title:"Выбрать слова",select_all:"Выбрать все",clear:"Очистить",
@@ -33,7 +34,8 @@ const UI = {
     word:"слово",word_plural:"слов",correct:"Верно",wrong:"Неверно",lesson_word:"Урок",
     quiz_btn:"Викторина",quiz_title:"Викторина",quiz_ask:"Какое это значение?",
     quiz_again:"Повторить ошибки",quiz_need:"Для викторины нужно минимум 4 слова.",
-    quiz_score:"верно из",search:"Поиск…"},
+    quiz_score:"верно из",search:"Поиск…",
+    full_screen:"Во весь экран",exit_full:"Вернуться в окно"},
   hy:{flashcards:"Քարտեր",lessons:"Դասեր",home_title:"Ի՞նչ սովորենք",
     home_sub:"Մատով քաշիր դասերի վրայով՝ մի քանիսը միանգամից ընտրելու համար։ Խառնիր N5 և N4։",
     specify_title:"Ընտրիր բառերը",select_all:"Ընտրել բոլորը",clear:"Մաքրել",
@@ -46,7 +48,8 @@ const UI = {
     word:"բառ",word_plural:"բառեր",correct:"Ճիշտ",wrong:"Սխալ",lesson_word:"Դաս",
     quiz_btn:"Խաղ",quiz_title:"Խաղ",quiz_ask:"Ո՞րն է իմաստը",
     quiz_again:"Կրկնել սխալները",quiz_need:"Խաղի համար պետք է առնվազն 4 բառ։",
-    quiz_score:"ճիշտ՝",search:"Որոնել…"},
+    quiz_score:"ճիշտ՝",search:"Որոնել…",
+    full_screen:"Ամբողջ էկրանով",exit_full:"Վերադառնալ պատուհան"},
 };
 
 /* ====== Words ======

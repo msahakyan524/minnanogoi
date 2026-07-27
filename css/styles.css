@@ -162,6 +162,19 @@ body[data-view="quiz"]    .view--quiz{display:block}
   border:1px solid var(--line);font-size:16px;box-shadow:var(--shadow-sm)}
 .back:active{transform:scale(.94)}
 .deck-meta{display:flex;flex-direction:column;flex:1}
+/* Full screen: one button does both ways — corners to open it out,
+   an ✕ to bring the cards back into the window. */
+.fs-toggle{display:flex;align-items:center;justify-content:center;flex:none}
+.fs-toggle .fs-out{display:none}
+body.is-fullscreen .fs-toggle .fs-in{display:none}
+body.is-fullscreen .fs-toggle .fs-out{display:block}
+body.is-fullscreen .view--cards,body.is-fullscreen .view--quiz{
+  position:fixed;inset:0;z-index:60;overflow:auto;background:var(--bg);
+  padding:16px;display:flex;flex-direction:column;justify-content:center}
+body.is-fullscreen .subhead{width:100%;max-width:640px;margin:0 auto 16px}
+body.is-fullscreen .card-zone,body.is-fullscreen #quizPlay{width:100%;max-width:640px;margin:0 auto}
+body.is-fullscreen .flashcard{width:min(100%,520px);max-height:64vh}
+body.is-fullscreen .actionbar{display:none}
 #deckTitle{font-weight:700;font-family:var(--display)}
 .deck-progress{font-size:12px;color:var(--ink-soft)}
 

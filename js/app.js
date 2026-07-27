@@ -80,6 +80,7 @@ function selectedWords(){
 function applyI18n(){
   $$("[data-i18n]").forEach(el => el.textContent = t(el.dataset.i18n));
   $$("[data-i18n-ph]").forEach(el => el.placeholder = t(el.dataset.i18nPh));
+  fullLabels();
   $("#langSelect").value = state.lang;
   document.documentElement.lang = state.lang;   // keep the page's own tag honest
   // refresh dynamic screens that show translations
@@ -109,9 +110,40 @@ function toast(text){
   toastTimer = setTimeout(() => box.classList.remove("is-on"), 2600);
 }
 
+/* ================= Full screen =================
+   The cards can take over the whole screen. We ask the browser for real full
+   screen where that is allowed, and either way blow the deck up to fill the
+   window ourselves — so it works on iPhones too, which have no such API.
+   The ✕ in the corner brings the cards back into the window. */
+function inNativeFull(){ return document.fullscreenElement || document.webkitFullscreenElement || null; }
+function fullLabels(){
+  const on = document.body.classList.contains("is-fullscreen");
+  const txt = t(on ? "exit_full" : "full_screen");
+  ["#fsCards","#fsQuiz"].forEach(sel => {
+    const b = $(sel);
+    if(b){ b.title = txt; b.setAttribute("aria-label", txt); }
+  });
+}
+function enterFull(){
+  document.body.classList.add("is-fullscreen");
+  fullLabels();
+  const el = document.documentElement;
+  const ask = el.requestFullscreen || el.webkitRequestFullscreen;
+  if(ask){ try { const p = ask.call(el); if(p && p.catch) p.catch(() => {}); } catch(e){} }
+  window.scrollTo(0, 0);
+}
+function leaveFull(){
+  document.body.classList.remove("is-fullscreen");
+  fullLabels();
+  const drop = document.exitFullscreen || document.webkitExitFullscreen;
+  if(inNativeFull() && drop){ try { const p = drop.call(document); if(p && p.catch) p.catch(() => {}); } catch(e){} }
+}
+function toggleFull(){ document.body.classList.contains("is-fullscreen") ? leaveFull() : enterFull(); }
+
 /* ================= Views + browser history ================= */
 function setView(name){
   document.body.dataset.view = name;
+  if(name !== "cards" && name !== "quiz") leaveFull();   // full screen is for the cards only
   syncActionbarSpace();   // the bar only shows on some views, so re-measure
   window.scrollTo({top:0, behavior:"instant"});
   // remember which screen was open, so a refresh can return to it
@@ -1015,6 +1047,13 @@ function init(){
     selectedWords().forEach(w => state.specified.add(w.id)); renderSpecify(); updateActionbar();
   });
   $("#clearWords").addEventListener("click", () => { state.specified.clear(); renderSpecify(); updateActionbar(); });
+
+  // full screen
+  $("#fsCards").addEventListener("click", toggleFull);
+  $("#fsQuiz").addEventListener("click", toggleFull);
+  ["fullscreenchange","webkitfullscreenchange"].forEach(ev =>
+    document.addEventListener(ev, () => { if(!inNativeFull()) { document.body.classList.remove("is-fullscreen"); fullLabels(); } })
+  );
 
   // flashcard controls
   enableSwipe();
