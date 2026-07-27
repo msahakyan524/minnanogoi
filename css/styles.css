@@ -168,12 +168,17 @@ body[data-view="quiz"]    .view--quiz{display:block}
 .fs-toggle .fs-out{display:none}
 body.is-fullscreen .fs-toggle .fs-in{display:none}
 body.is-fullscreen .fs-toggle .fs-out{display:block}
+/* nothing scrolls while the cards hold the screen — it stays perfectly still */
+body.is-fullscreen{overflow:hidden;overscroll-behavior:none}
 body.is-fullscreen .view--cards,body.is-fullscreen .view--quiz{
-  position:fixed;inset:0;z-index:60;overflow:auto;background:var(--bg);
+  position:fixed;inset:0;z-index:60;overflow:hidden;background:var(--bg);
   padding:16px;display:flex;flex-direction:column;justify-content:center}
+/* the quiz keeps a way down only if its answers truly don't fit the screen */
+body.is-fullscreen .view--quiz{overflow-y:auto;overscroll-behavior:contain}
+body.is-fullscreen .flashcard{touch-action:none}   /* an up-down drag no longer moves the page */
 body.is-fullscreen .subhead{width:100%;max-width:640px;margin:0 auto 16px}
 body.is-fullscreen .card-zone,body.is-fullscreen #quizPlay{width:100%;max-width:640px;margin:0 auto}
-body.is-fullscreen .flashcard{width:min(100%,520px);max-height:64vh}
+body.is-fullscreen .flashcard{width:min(100%,520px);max-height:min(56vh,460px)}
 body.is-fullscreen .actionbar{display:none}
 #deckTitle{font-weight:700;font-family:var(--display)}
 .deck-progress{font-size:12px;color:var(--ink-soft)}
