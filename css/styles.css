@@ -171,15 +171,23 @@ body.is-fullscreen .fs-toggle .fs-out{display:block}
 /* nothing scrolls while the cards hold the screen — it stays perfectly still */
 /* fixed, not merely overflow:hidden — iPhones ignore the latter and still drift */
 body.is-fullscreen{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none}
+/* --fs-h / --fs-top come from JS: the height Safari actually leaves visible
+   between its address bar and its toolbar. Without them the deck is as tall as
+   the whole phone and the bars cover its top and bottom. */
 body.is-fullscreen .view--cards,body.is-fullscreen .view--quiz{
-  position:fixed;inset:0;z-index:60;overflow:hidden;background:var(--bg);
-  padding:16px;display:flex;flex-direction:column;justify-content:center}
+  position:fixed;left:0;right:0;top:var(--fs-top,0px);
+  height:var(--fs-h,100vh);z-index:60;overflow:hidden;background:var(--bg);
+  padding:calc(12px + env(safe-area-inset-top)) 16px calc(12px + env(safe-area-inset-bottom));
+  display:flex;flex-direction:column;justify-content:center}
 /* the quiz keeps a way down only if its answers truly don't fit the screen */
 body.is-fullscreen .view--quiz{overflow-y:auto;overscroll-behavior:contain}
 body.is-fullscreen .flashcard{touch-action:none}   /* an up-down drag no longer moves the page */
 body.is-fullscreen .subhead{width:100%;max-width:640px;margin:0 auto 16px}
 body.is-fullscreen .card-zone,body.is-fullscreen #quizPlay{width:100%;max-width:640px;margin:0 auto}
-body.is-fullscreen .flashcard{width:min(100%,520px);max-height:min(56vh,460px)}
+body.is-fullscreen .flashcard{width:min(100%,520px);max-height:min(calc(var(--fs-h,100vh) * 0.52),460px)}
+body.is-fullscreen .sound-btn{margin-bottom:8px}
+body.is-fullscreen .tap-hint{margin-top:8px}
+body.is-fullscreen .card-controls{margin-top:12px}
 body.is-fullscreen .actionbar{display:none}
 #deckTitle{font-weight:700;font-family:var(--display)}
 .deck-progress{font-size:12px;color:var(--ink-soft)}

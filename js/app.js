@@ -116,6 +116,24 @@ function toast(text){
    window ourselves — so it works on iPhones too, which have no such API.
    The ✕ in the corner brings the cards back into the window. */
 function inNativeFull(){ return document.fullscreenElement || document.webkitFullscreenElement || null; }
+/* Safari's address bar and toolbar sit *over* the page, so "the whole screen"
+   is taller than what you can actually see. Measure the visible strip and hand
+   it to the CSS, or the deck's top and bottom hide behind those bars. */
+function syncFsViewport(){
+  const root = document.documentElement.style;
+  if(!document.body.classList.contains("is-fullscreen")){
+    root.removeProperty("--fs-h"); root.removeProperty("--fs-top"); return;
+  }
+  const vv = window.visualViewport;
+  root.setProperty("--fs-h", (vv ? vv.height : window.innerHeight) + "px");
+  root.setProperty("--fs-top", (vv ? vv.offsetTop : 0) + "px");
+}
+if(window.visualViewport){
+  window.visualViewport.addEventListener("resize", syncFsViewport);
+  window.visualViewport.addEventListener("scroll", syncFsViewport);
+}
+window.addEventListener("resize", syncFsViewport);
+window.addEventListener("orientationchange", () => setTimeout(syncFsViewport, 300));
 function fullLabels(){
   const on = document.body.classList.contains("is-fullscreen");
   const txt = t(on ? "exit_full" : "full_screen");
@@ -131,10 +149,13 @@ function enterFull(){
   const ask = el.requestFullscreen || el.webkitRequestFullscreen;
   if(ask){ try { const p = ask.call(el); if(p && p.catch) p.catch(() => {}); } catch(e){} }
   window.scrollTo(0, 0);
+  syncFsViewport();
+  setTimeout(syncFsViewport, 250);   // again once the browser's bars settle
 }
 function leaveFull(){
   document.body.classList.remove("is-fullscreen");
   fullLabels();
+  syncFsViewport();
   const drop = document.exitFullscreen || document.webkitExitFullscreen;
   if(inNativeFull() && drop){ try { const p = drop.call(document); if(p && p.catch) p.catch(() => {}); } catch(e){} }
 }
@@ -1052,7 +1073,7 @@ function init(){
   $("#fsCards").addEventListener("click", toggleFull);
   $("#fsQuiz").addEventListener("click", toggleFull);
   ["fullscreenchange","webkitfullscreenchange"].forEach(ev =>
-    document.addEventListener(ev, () => { if(!inNativeFull()) { document.body.classList.remove("is-fullscreen"); fullLabels(); } })
+    document.addEventListener(ev, () => { if(!inNativeFull()) { document.body.classList.remove("is-fullscreen"); fullLabels(); syncFsViewport(); } })
   );
 
   // flashcard controls
