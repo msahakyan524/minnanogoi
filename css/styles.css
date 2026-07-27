@@ -169,7 +169,8 @@ body[data-view="quiz"]    .view--quiz{display:block}
 body.is-fullscreen .fs-toggle .fs-in{display:none}
 body.is-fullscreen .fs-toggle .fs-out{display:block}
 /* nothing scrolls while the cards hold the screen — it stays perfectly still */
-body.is-fullscreen{overflow:hidden;overscroll-behavior:none}
+/* fixed, not merely overflow:hidden — iPhones ignore the latter and still drift */
+body.is-fullscreen{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none}
 body.is-fullscreen .view--cards,body.is-fullscreen .view--quiz{
   position:fixed;inset:0;z-index:60;overflow:hidden;background:var(--bg);
   padding:16px;display:flex;flex-direction:column;justify-content:center}
