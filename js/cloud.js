@@ -156,13 +156,37 @@
   }
   window.cloudPoints = savePoints;
 
-  async function logSession(known, total) {
+  /* One finished deck or quiz, written to the same `study_sessions` table the
+     kanji site writes to. Ours are stamped app:"vocab"; the kanji sister
+     leaves `app` empty, which is how the history screen tells them apart. */
+  async function logSession(row) {
     if (!sb || !me) return;
-    await sb.from("study_sessions")
-      .insert({ user_id: me.id, app: "vocab", set_name: "vocabulary",
-                total: total, known: known, unknown: Math.max(0, total - known) });
+    await sb.from("study_sessions").insert({
+      user_id: me.id, app: "vocab",
+      set_name: row.set_name || "vocabulary",
+      total: row.total || 0,
+      known: row.known || 0,
+      unknown: Math.max(0, (row.total || 0) - (row.known || 0)),
+      skipped: row.skipped || 0,
+    });
   }
   window.cloudSession = logSession;
+
+  /* Everything this account has ever finished, on either site. Signed out (or
+     if the table is unreachable) it returns null and the history screen shows
+     just what this device remembers. */
+  async function fetchHistory(limit) {
+    if (!sb || !me) return null;
+    const { data, error } = await sb.from("study_sessions")
+      .select("id,app,set_name,total,known,unknown,skipped,created_at")
+      .eq("user_id", me.id)
+      .order("created_at", { ascending: false })
+      .limit(limit || 300);
+    if (error) return null;
+    return data || [];
+  }
+  window.cloudHistory = fetchHistory;
+  window.cloudSignedIn = () => !!me;
 
   /* ---------- the panel ---------- */
   function openPanel() {
@@ -702,6 +726,8 @@
     paintTab();
     if (!$("#acc-modal").hidden) render();
     if (me) pull();
+    // signing in adds the other site's sessions to the history, out takes them away
+    if (typeof window.historyChanged === "function") window.historyChanged();
   }
 
   function init() {

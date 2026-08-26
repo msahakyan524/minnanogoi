@@ -9,6 +9,7 @@ const state = {
   specified: new Set(),   // word ids chosen in "specify" (subset of selected lessons)
   deck: [], index: 0, flipped: false,
   known: new Set(), review: new Set(), deckTitle: "", sourceWords: [],
+  logged: false,          // this deck has already been written to the history
   favorites: new Set(JSON.parse(localStorage.getItem("favorites") || "[]")),
 };
 
@@ -19,19 +20,120 @@ const t = (k) => (UI[state.lang] && UI[state.lang][k]) || UI.en[k] || k;
 const lkey = (b, l) => b + "|" + l;
 const wordById = new Map(WORDS.map(w => [w.id, w]));
 
-/* Build the front-of-card markup with real furigana: the small reading sits
-   only above the kanji part of the word, not above a trailing hiragana
-   ending (e.g. します in 留学します) since that part is already plain kana. */
+/* ===== Furigana =====
+   Put each slice of the reading over the kanji it actually belongs to, and
+   leave the kana that is already written in the word bare: お金 → お金(かね),
+   食べます → 食(た)べます, 申し込みます → 申(もう)し込(こ)みます.
+
+   The kana already visible in the word are the anchors: they must appear in
+   the reading in the same order, so whatever sits between two anchors is the
+   reading of the kanji between them. If the two ever disagree (a wrong or
+   irregular reading), we fall back to one ruby over the whole word rather
+   than guessing. */
+const isKana = ch => /[ぁ-んァ-ヶー]/.test(ch);
+/* Anything that is spelled one way and read another, so it needs a reading on
+   top: kanji, and digits — 2分の1 is read にぶんのいち. */
+const isKanji = ch => /[々㐀-䶿一-鿿0-9０-９]/.test(ch);
+const isPlaceholder = txt => /[~～]/.test(txt);
+const toHira = s => s.replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
+
+/* Cut the word into pieces the aligner can reason about: runs of kana, runs
+   of kanji, and "notes" — the extras a few entries carry, like the (する) in
+   運動(する), the [な] in 元気[な] or the ・ in 水泳・泳ぎます. A note may or
+   may not show up in the reading too, so it is matched loosely. A bracket
+   whose inside has kanji (起きます(起きる)) is not a note: the inside is a
+   word in its own right and gets furigana like any other. */
+function splitRuns(jp){
+  const runs = [];
+  const push = (type, ch) => {
+    const last = runs[runs.length - 1];
+    if(last && last.type === type && type !== "note") last.text += ch;
+    else runs.push({ type, text: ch });
+  };
+  for(let i = 0; i < jp.length; i++){
+    const ch = jp[i];
+    const close = { "(": ")", "（": "）", "[": "]", "［": "］" }[ch];
+    if(close){
+      const end = jp.indexOf(close, i + 1);
+      const inside = end > 0 ? jp.slice(i + 1, end) : "";
+      if(end > 0 && ![...inside].some(isKanji)){
+        runs.push({ type: "note", text: jp.slice(i, end + 1) });
+        i = end;
+        continue;
+      }
+    }
+    push(isKana(ch) ? "kana" : isKanji(ch) ? "kanji" : "note", ch);
+  }
+  /* "~を卒業する" is read そつぎょうする: the particle belongs to the ~ stand-in
+     for the missing word, not to the word being read, so it may be absent. */
+  runs.forEach((run, i) => {
+    const before = runs[i - 1];
+    if(run.type === "kana" && before && before.type === "note" && isPlaceholder(before.text)){
+      run.optional = true;
+    }
+  });
+  return runs;
+}
+
+/* → [{text, reading}] where reading is "" for parts that need no furigana,
+   or null when the word and its reading can't be lined up.
+   Kanji lengths are tried shortest-first with backtracking, so 五つ lands on
+   五(いつ)つ rather than stopping at the first つ it sees. */
+function furiganaParts(jp, rd){
+  if(!rd || toHira(rd) === toHira(jp)) return [{ text: jp, reading: "" }];
+  const runs = splitRuns(jp);
+  const reading = toHira(rd);
+
+  const walk = (i, pos) => {
+    if(i === runs.length) return pos === reading.length ? [] : null;
+    const run = runs[i];
+    const bare = rest => rest && [{ text: run.text, reading: "" }, ...rest];
+
+    if(run.type === "kana"){
+      const kana = toHira(run.text);
+      if(reading.startsWith(kana, pos)){
+        const taken = bare(walk(i + 1, pos + kana.length));
+        if(taken) return taken;
+      } else if(!run.optional){
+        return null;                    // plain kana must be in the reading
+      }
+      return run.optional ? bare(walk(i + 1, pos)) : null;
+    }
+
+    if(run.type === "note"){
+      // the reading may spell the note out too (・, (を)), or leave it out entirely
+      const spoken = toHira(run.text).replace(/[^ぁ-んー]/g, "");
+      for(const guess of [toHira(run.text), spoken, ""]){
+        if(guess && !reading.startsWith(guess, pos)) continue;
+        const rest = bare(walk(i + 1, pos + guess.length));
+        if(rest) return rest;
+      }
+      return null;
+    }
+
+    for(let end = pos + 1; end <= reading.length; end++){
+      if(!isKana(reading[end - 1])) break;   // a kanji is read as kana, never as ・ or ~
+      const rest = walk(i + 1, end);
+      if(rest) return [{ text: run.text, reading: rd.slice(pos, end) }, ...rest];
+    }
+    return null;
+  };
+  return walk(0, 0);
+}
+
+/* Word with its furigana as HTML. Falls back to a single ruby over the kanji
+   when the reading can't be lined up piece by piece. */
+function furiganaHTML(w, rtClass){
+  const rt = txt => `<rt class="${rtClass}">${txt}</rt>`;
+  const parts = furiganaParts(w.jp, w.rd);
+  if(parts){
+    return parts.map(p => p.reading ? `<ruby>${p.text}${rt(p.reading)}</ruby>` : p.text).join("");
+  }
+  return `<ruby>${w.jp}${rt(w.rd)}</ruby>`;
+}
+
 function frontFurigana(w){
-  if(!w.rd) return `<div class="fc-jp-line">${w.jp}</div>`;
-  const isHiragana = ch => /[ぁ-んー]/.test(ch);
-  let cut = w.jp.length;
-  while(cut > 0 && isHiragana(w.jp[cut - 1])) cut--;
-  const kanjiPart = w.jp.slice(0, cut);
-  const suffix = w.jp.slice(cut);
-  if(!kanjiPart) return `<div class="fc-jp-line">${w.jp}</div>`;   // whole word is kana, no furigana needed
-  const reading = suffix ? w.rd.slice(0, w.rd.length - suffix.length) : w.rd;
-  return `<div class="fc-jp-line"><ruby>${kanjiPart}<rt class="fc-reading">${reading}</rt></ruby>${suffix}</div>`;
+  return `<div class="fc-jp-line">${furiganaHTML(w, "fc-reading")}</div>`;
 }
 
 /* shrink the word on the front of the card just enough to keep it on one
@@ -60,7 +162,62 @@ function persistSession(){
   session.known = [...state.known];
   session.review = [...state.review];
   session.deckTitle = state.deckTitle;
+  session.logged = state.logged;
   localStorage.setItem("session", JSON.stringify(session));
+}
+
+/* ===== The quiz survives a refresh too =====
+   The cards have been saved since day one; a quiz was not, so reloading
+   mid-game dropped you on the home screen with the score gone. Everything
+   needed to redraw the game is written down: which words are being asked, how
+   far in you are, the score, and the four options each question was given
+   (so stepping back shows the answers you actually saw, not a fresh shuffle). */
+const QUIZ_KEY = "quizSession";
+function persistQuiz(){
+  if(!quiz.items.length){ localStorage.removeItem(QUIZ_KEY); return; }
+  const snap = {
+    itemIds: quiz.items.map(w => w.id),
+    poolIds: quiz.pool.map(w => w.id),
+    index: quiz.index, view: quiz.view, score: quiz.score,
+    wrongIds: quiz.wrong.map(w => w.id),
+    rounds: quiz.rounds.map(r => r ? { options: r.options, right: r.right, picked: r.picked } : null),
+    done: !$("#quizDone").hidden,
+    logged: quiz.logged,
+  };
+  try { localStorage.setItem(QUIZ_KEY, JSON.stringify(snap)); } catch(e){}
+}
+
+/* Put a refreshed page back into the game. Returns true if it did. */
+function restoreQuiz(){
+  let s;
+  try { s = JSON.parse(localStorage.getItem(QUIZ_KEY) || "null"); }
+  catch(e){ return false; }
+  if(!s || !Array.isArray(s.itemIds) || !s.itemIds.length) return false;
+
+  const items = s.itemIds.map(id => wordById.get(id)).filter(Boolean);
+  if(items.length !== s.itemIds.length) return false;   // the word list moved under us
+
+  quiz.items  = items;
+  quiz.pool   = (s.poolIds || []).map(id => wordById.get(id)).filter(Boolean);
+  quiz.index  = Math.min(Math.max(s.index || 0, 0), items.length - 1);
+  quiz.score  = s.score || 0;
+  quiz.wrong  = (s.wrongIds || []).map(id => wordById.get(id)).filter(Boolean);
+  quiz.rounds = Array.isArray(s.rounds) ? s.rounds.slice() : [];
+  quiz.locked = false;
+  quiz.logged = !!s.logged;
+
+  // refreshed in the beat between answering and the next question: move on,
+  // otherwise you come back to a question that can no longer be answered
+  let done = !!s.done;
+  const current = quiz.rounds[quiz.index];
+  if(current && current.picked !== null){
+    if(quiz.index < quiz.items.length - 1) quiz.index++;
+    else done = true;
+  }
+  document.body.dataset.view = "quiz";
+  if(done){ $("#quizPlay").hidden = true; finishQuiz(); }
+  else { $("#quizDone").hidden = true; $("#quizPlay").hidden = false; renderQuestion(); }
+  return true;
 }
 
 /* words present for a given book+lesson */
@@ -87,6 +244,7 @@ function applyI18n(){
   if(document.body.dataset.view === "specify") renderSpecify();
   if(document.body.dataset.view === "cards") renderCard();
   if(document.body.dataset.view === "lessons") { renderSingleBooks(); }
+  if(document.body.dataset.view === "history") renderHistory();   // dates and labels are translated
   // the quiz options are meanings, so a language switch has to redraw them
   if(document.body.dataset.view === "quiz" && !quiz.locked && quiz.items.length) renderQuestion();
   renderBooks();
@@ -431,6 +589,7 @@ function openLessonWords(b, l, annotate, focusWordId=null){
 /* ================= Flashcards ================= */
 function startDeck(words, title){
   if(!words.length) return;
+  state.logged = false;
   state.deck = words.slice();
   state.sourceWords = words.slice();
   state.deckTitle = title;
@@ -621,6 +780,50 @@ function wrongByLesson(){
   return [...tally.values()].sort((a, b) => b.count - a.count);
 }
 
+/* ================= History =================
+   Every deck and every quiz you finish is written down twice: here on the
+   device, so it is there whether or not you have an account, and — when you
+   are signed in — into `study_sessions`, the table the kanji site already
+   writes its own sessions to. The history screen puts the two together. */
+const HISTORY_KEY = "mn_history";
+const HISTORY_MAX = 300;
+
+function loadLocalHistory(){
+  try {
+    const rows = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+    return Array.isArray(rows) ? rows : [];
+  } catch(e){ return []; }
+}
+
+/* Name a session after the lessons it came from — "Քարտեր" told you nothing
+   a week later. */
+function wordsLabel(words){
+  const byBook = new Map();
+  (words || []).forEach(w => {
+    if(!byBook.has(w.b)) byBook.set(w.b, new Set());
+    byBook.get(w.b).add(w.l);
+  });
+  const parts = [];
+  for(const [bookId, lessons] of byBook){
+    const book = BOOKS.find(x => x.id === bookId);
+    const ls = [...lessons].sort((a, b) => a - b);
+    const shown = ls.slice(0, 4).join(", ") + (ls.length > 4 ? "…" : "");
+    parts.push(`${book ? book.name : bookId} · ${t("lesson_word")} ${shown}`);
+  }
+  return parts.join(" + ") || t("flashcards");
+}
+
+function recordSession(kind, title, total, known){
+  const entry = { at: new Date().toISOString(), kind, title,
+                  total, known, unknown: Math.max(0, total - known) };
+  const rows = loadLocalHistory();
+  rows.unshift(entry);
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(rows.slice(0, HISTORY_MAX))); } catch(e){}
+  if(typeof window.cloudSession === "function"){
+    window.cloudSession({ set_name: title, total, known, skipped: 0 });
+  }
+}
+
 /* One word, counted once — ever. Studying the same deck again is good for you
    but it isn't new knowledge, so this list remembers every word you have ever
    marked known. What each one is WORTH is decided in cloud.js by its level:
@@ -665,7 +868,11 @@ function finishDeck(){
   const unknownCount = total - state.known.size;   // review + anything left unmarked
   // one point per word known, but only the first time that word is known
   creditNewlyKnown();
-  if(typeof window.cloudSession === "function") window.cloudSession(state.known.size, total);
+  // written down once: a refresh on the results screen calls this again
+  if(!state.logged){
+    state.logged = true;
+    recordSession("cards", wordsLabel(state.deck), total, state.known.size);
+  }
   $("#doneTitle").textContent = "";
   $("#doneSub").textContent = "";
   const graphic = $("#doneGraphic");
@@ -801,12 +1008,111 @@ window.reloadFromCloud = function(){
   applyI18n();
 };
 
+/* ================= History screen =================
+   Two sources, one list. This device always has its own log; an account adds
+   everything done on other devices AND everything done next door on the kanji
+   site, which writes to the same table. A session logged in both places shows
+   up once — same site, same name, same score, same minute is the same run. */
+/* Full locale tags: "hy" alone leaves some browsers on their own default,
+   and all three audiences read a 24-hour clock. */
+const DATE_LOCALE = { en: "en-GB", ru: "ru-RU", hy: "hy-AM" };
+const histLocale = () => DATE_LOCALE[state.lang] || "en-GB";
+
+const escHtml = s => String(s == null ? "" : s)
+  .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+  .replace(/"/g, "&quot;");
+
+function mergeHistory(cloudRows){
+  const local = loadLocalHistory().map(r => ({
+    at: r.at, site: "vocab", kind: r.kind, title: r.title,
+    total: r.total || 0, known: r.known || 0,
+  }));
+  // the kanji site inserts its rows without an `app`, ours are stamped "vocab"
+  const remote = (cloudRows || []).map(r => ({
+    at: r.created_at, site: r.app === "vocab" ? "vocab" : "kanji", kind: null,
+    title: r.set_name || "", total: r.total || 0, known: r.known || 0,
+  }));
+
+  const seen = new Set();
+  const rows = [];
+  for(const r of [...local, ...remote]){
+    const when = new Date(r.at).getTime();
+    if(!when) continue;
+    const key = [r.site, r.title, r.total, r.known, Math.floor(when / 60000)].join("|");
+    if(seen.has(key)) continue;
+    seen.add(key);
+    rows.push(r);
+  }
+  return rows.sort((a, b) => new Date(b.at) - new Date(a.at));
+}
+
+function historyRowHTML(r){
+  const pct = r.total ? Math.round((r.known / r.total) * 100) : 0;
+  const time = new Date(r.at).toLocaleTimeString(histLocale(),
+    { hour: "2-digit", minute: "2-digit", hour12: false });
+  const what = r.kind === "quiz" ? t("quiz_btn") : r.kind === "cards" ? t("flashcards") : "";
+  const site = r.site === "kanji" ? t("site_kanji") : t("site_vocab");
+  return `<li class="hist-row">
+    <span class="hist-row__site hist-row__site--${r.site}">${site}</span>
+    <div class="hist-row__body">
+      <p class="hist-row__title">${escHtml(r.title) || site}</p>
+      <p class="hist-row__sub">${time}${what ? " · " + what : ""}</p>
+    </div>
+    <div class="hist-row__score">
+      <span class="hist-row__count">${r.known}/${r.total}</span>
+      <span class="hist-bar"><i style="width:${pct}%"></i></span>
+    </div>
+  </li>`;
+}
+
+function paintHistory(rows, signedIn){
+  const box = $("#historyList");
+  const note = $("#historyNote");
+  note.textContent = signedIn ? "" : t("history_signin");
+  note.hidden = !note.textContent;
+
+  if(!rows.length){
+    box.innerHTML = `<p class="hist-empty">${t("history_empty")}</p>`;
+    return;
+  }
+  let html = "";
+  let day = "";
+  rows.forEach(r => {
+    const d = new Date(r.at).toLocaleDateString(histLocale(),
+      { day: "numeric", month: "long", year: "numeric" });
+    if(d !== day){
+      if(day) html += "</ul>";
+      html += `<h3 class="hist-day">${escHtml(d)}</h3><ul class="hist-list">`;
+      day = d;
+    }
+    html += historyRowHTML(r);
+  });
+  box.innerHTML = html + "</ul>";
+}
+
+/* Draw what we have straight away, then fill the account's sessions in when
+   they arrive — the screen is never blank waiting on the network. */
+function renderHistory(){
+  const signedIn = typeof window.cloudSignedIn === "function" && window.cloudSignedIn();
+  paintHistory(mergeHistory(null), signedIn);
+  if(!signedIn || typeof window.cloudHistory !== "function") return;
+  window.cloudHistory(300).then(rows => {
+    if(document.body.dataset.view !== "history") return;   // moved on already
+    paintHistory(mergeHistory(rows), true);
+  }).catch(() => {});
+}
+
+/* cloud.js calls this when you sign in or out */
+window.historyChanged = function(){
+  if(document.body.dataset.view === "history") renderHistory();
+};
+
 /* ================= Quiz =================
    The same words as the flashcards, played instead of flipped: the Japanese
    on top, four meanings below, one of them right. Nothing is written back to
    the deck — a game shouldn't decide what you "know". */
 const quiz = { items: [], pool: [], index: 0, score: 0, wrong: [], locked: false,
-               rounds: [], view: 0 };
+               rounds: [], view: 0, logged: false };
 
 const quizMeaning = (w) => (w[state.lang] || w.en || "").trim();
 
@@ -842,7 +1148,7 @@ function startQuiz(words, decoyFrom){
   quiz.items = shuffledCopy(asked);
   quiz.pool = pool;
   quiz.index = 0; quiz.score = 0; quiz.wrong = []; quiz.locked = false;
-  quiz.rounds = []; quiz.view = 0;
+  quiz.rounds = []; quiz.view = 0; quiz.logged = false;
   $("#quizDone").hidden = true;
   $("#quizPlay").hidden = false;
   go("quiz");
@@ -883,7 +1189,7 @@ function paintRound(){
   if(!w || !round) return;
   const answered = round.picked !== null;
   $("#quizProgress").textContent = `${i + 1} / ${quiz.items.length}`;
-  $("#quizWord").innerHTML = `<span lang="ja">${w.jp}</span>`;
+  $("#quizWord").innerHTML = `<span lang="ja">${furiganaHTML(w, "quiz-reading")}</span>`;
 
   const box = $("#quizOptions");
   box.innerHTML = "";
@@ -904,6 +1210,7 @@ function paintRound(){
     box.appendChild(b);
   });
   paintQuizNav();
+  persistQuiz();      // a refresh lands back on exactly this question
 }
 
 /* ‹ walks back through what you have answered, › returns towards the question
@@ -927,7 +1234,7 @@ function answerQuiz(btn, text){
   quiz.locked = true;
   round.picked = text;
   const isRight = text === round.right;
-
+  persistQuiz();                                     // the pick is safe before any animation
   const opts = $$(".quiz-opt");
   opts.forEach(b => { b.disabled = true; });
   if(isRight){
@@ -956,6 +1263,11 @@ function finishQuiz(){
 
   const total = quiz.items.length;
   const missed = total - quiz.score;
+  // once per game, not once per refresh of the results screen
+  if(!quiz.logged){
+    quiz.logged = true;
+    recordSession("quiz", wordsLabel(quiz.items), total, quiz.score);
+  }
   const graphic = $("#quizGraphic");
   if(missed === 0){
     graphic.innerHTML = buildSugee();
@@ -973,6 +1285,7 @@ function finishQuiz(){
   again.hidden = quiz.wrong.length === 0;
   again.textContent = `${t("quiz_again")} (${quiz.wrong.length})`;
   $("#quizRestartBtn").textContent = t("restart");
+  persistQuiz();
 }
 
 /* One-time rescue. Until now a word only counted when a deck was played all
@@ -1006,6 +1319,7 @@ function restoreSession(){
   state.known = new Set(session.known || []);
   state.review = new Set(session.review || []);
   state.deckTitle = session.deckTitle || t("flashcards");
+  state.logged = !!session.logged;
   $("#deckTitle").textContent = state.deckTitle;
   document.body.dataset.view = "cards";
 
@@ -1021,9 +1335,21 @@ function init(){
   renderBooks();
   applyI18n();
   rescueSavedSession();                // pay for anything a half-finished deck never credited
-  const restored = restoreSession();   // put a refreshed page back where it left off
-  history.replaceState({view: restored ? "cards" : "home"}, ""); // first history step
-  window.addEventListener("popstate", e => setView((e.state && e.state.view) || "home"));
+  /* Put a refreshed page back where it left off. Which screen was open is
+     already written down by setView(), so we only try the matching one. */
+  let last = "home";
+  try { last = (JSON.parse(localStorage.getItem("session") || "{}").view) || "home"; }
+  catch(e){}
+  let restored = "";
+  if(last === "quiz" && restoreQuiz()) restored = "quiz";
+  else if(restoreSession()) restored = "cards";
+  else if(last === "history"){ renderHistory(); setView("history"); restored = "history"; }
+  history.replaceState({view: restored || "home"}, ""); // first history step
+  window.addEventListener("popstate", e => {
+    const view = (e.state && e.state.view) || "home";
+    if(view === "history") renderHistory();   // it may have grown since you left it
+    setView(view);
+  });
 
   $("#langSelect").addEventListener("change", e => { state.lang = e.target.value; persist(); applyI18n(); });
   $("#brandBtn").addEventListener("click", () => go("home"));
@@ -1034,6 +1360,7 @@ function init(){
     startDeck(words, t("flashcards"));
   });
   $("#navLessons").addEventListener("click", () => { renderSingleBooks(); go("lessons"); });
+  $("#navHistory").addEventListener("click", () => { renderHistory(); go("history"); });
 
   $("#studyBtn").addEventListener("click", () => {
     const words = state.specified.size ? selectedWords().filter(w=>state.specified.has(w.id)) : selectedWords();
