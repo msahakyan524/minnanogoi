@@ -10,6 +10,7 @@ const state = {
   deck: [], index: 0, flipped: false,
   known: new Set(), review: new Set(), deckTitle: "", sourceWords: [],
   logged: false,          // this deck has already been written to the history
+  historyId: "",          // the history entry this deck is keeping up to date
   favorites: new Set(JSON.parse(localStorage.getItem("favorites") || "[]")),
 };
 
@@ -163,7 +164,21 @@ function persistSession(){
   session.review = [...state.review];
   session.deckTitle = state.deckTitle;
   session.logged = state.logged;
+  session.historyId = state.historyId;
   localStorage.setItem("session", JSON.stringify(session));
+  // keep this deck's history entry in step, so leaving now loses nothing
+  if(!state.logged){
+    updateSession(state.historyId, {
+      total: state.deck.length,
+      known: state.known.size,
+      unknown: state.review.size,
+      resume: {
+        deckIds: session.deckIds, sourceIds: session.sourceIds,
+        index: state.index, known: session.known, review: session.review,
+        deckTitle: state.deckTitle,
+      },
+    });
+  }
 }
 
 /* ===== The quiz survives a refresh too =====
@@ -183,8 +198,18 @@ function persistQuiz(){
     rounds: quiz.rounds.map(r => r ? { options: r.options, right: r.right, picked: r.picked } : null),
     done: !$("#quizDone").hidden,
     logged: quiz.logged,
+    historyId: quiz.historyId,
   };
   try { localStorage.setItem(QUIZ_KEY, JSON.stringify(snap)); } catch(e){}
+  // a game walked away from is still a game you can come back to
+  if(!quiz.logged){
+    const answered = quiz.rounds.filter(r => r && r.picked !== null).length;
+    updateSession(quiz.historyId, {
+      total: quiz.items.length, known: quiz.score,
+      unknown: Math.max(0, answered - quiz.score),
+      resume: snap,
+    });
+  }
 }
 
 /* Put a refreshed page back into the game. Returns true if it did. */
@@ -205,6 +230,7 @@ function restoreQuiz(){
   quiz.rounds = Array.isArray(s.rounds) ? s.rounds.slice() : [];
   quiz.locked = false;
   quiz.logged = !!s.logged;
+  quiz.historyId = s.historyId || "";
 
   // refreshed in the beat between answering and the next question: move on,
   // otherwise you come back to a question that can no longer be answered
@@ -590,6 +616,7 @@ function openLessonWords(b, l, annotate, focusWordId=null){
 function startDeck(words, title){
   if(!words.length) return;
   state.logged = false;
+  state.historyId = newSession("cards", wordsLabel(words), words.length);
   state.deck = words.slice();
   state.sourceWords = words.slice();
   state.deckTitle = title;
@@ -813,15 +840,87 @@ function wordsLabel(words){
   return parts.join(" + ") || t("flashcards");
 }
 
-function recordSession(kind, title, total, known){
-  const entry = { at: new Date().toISOString(), kind, title,
-                  total, known, unknown: Math.max(0, total - known) };
-  const rows = loadLocalHistory();
-  rows.unshift(entry);
+function saveLocalHistory(rows){
   try { localStorage.setItem(HISTORY_KEY, JSON.stringify(rows.slice(0, HISTORY_MAX))); } catch(e){}
+}
+
+/* A session joins the history the moment it starts, not when it ends — a deck
+   you put down half-way is exactly the one you want to find again. Each entry
+   keeps its own place (`resume`), so picking it up later carries on from the
+   card or question you stopped at instead of starting over. Finishing it
+   clears that place and marks it done. */
+let historySeq = 0;
+function newSession(kind, title, total){
+  const id = "s" + Date.now().toString(36) + (historySeq++).toString(36);
+  const rows = loadLocalHistory();
+  rows.unshift({ at: new Date().toISOString(), id, kind, title,
+                 total, known: 0, unknown: 0, done: false, resume: null });
+  saveLocalHistory(rows);
+  return id;
+}
+
+/* Called on every swipe and every answer: cheap, and it means the history is
+   never more than one card behind what you actually did. */
+function updateSession(id, patch){
+  if(!id) return;
+  const rows = loadLocalHistory();
+  const entry = rows.find(r => r.id === id);
+  if(!entry) return;
+  Object.assign(entry, patch, { at: new Date().toISOString() });
+  saveLocalHistory(rows);
+}
+
+function finishSession(id, title, total, known){
+  updateSession(id, { title, total, known, unknown: Math.max(0, total - known),
+                      done: true, resume: null });
   if(typeof window.cloudSession === "function"){
     window.cloudSession({ set_name: title, total, known, skipped: 0 });
   }
+}
+
+/* The entry you tapped "continue" on, put back into play. */
+function resumeSession(id){
+  const entry = loadLocalHistory().find(r => r.id === id);
+  if(!entry || !entry.resume) return false;
+  const r = entry.resume;
+
+  if(entry.kind === "quiz"){
+    const items = (r.itemIds || []).map(i => wordById.get(i)).filter(Boolean);
+    if(!items.length) return false;
+    quiz.items = items;
+    quiz.pool = (r.poolIds || []).map(i => wordById.get(i)).filter(Boolean);
+    quiz.index = Math.min(Math.max(r.index || 0, 0), items.length - 1);
+    quiz.score = r.score || 0;
+    quiz.wrong = (r.wrongIds || []).map(i => wordById.get(i)).filter(Boolean);
+    quiz.rounds = Array.isArray(r.rounds) ? r.rounds.slice() : [];
+    quiz.locked = false;
+    quiz.logged = false;
+    quiz.historyId = id;
+    $("#quizDone").hidden = true;
+    $("#quizPlay").hidden = false;
+    go("quiz");
+    renderQuestion();
+    return true;
+  }
+
+  const deck = (r.deckIds || []).map(i => wordById.get(i)).filter(Boolean);
+  if(!deck.length) return false;
+  const source = (r.sourceIds || []).map(i => wordById.get(i)).filter(Boolean);
+  state.deck = deck;
+  state.sourceWords = source.length ? source : deck.slice();
+  state.index = Math.min(Math.max(r.index || 0, 0), deck.length - 1);
+  state.known = new Set(r.known || []);
+  state.review = new Set(r.review || []);
+  state.deckTitle = r.deckTitle || entry.title;
+  state.flipped = false;
+  state.logged = false;
+  state.historyId = id;
+  $("#deckTitle").textContent = state.deckTitle;
+  showDone(false);
+  go("cards");
+  renderCard();
+  persistSession();
+  return true;
 }
 
 /* One word, counted once — ever. Studying the same deck again is good for you
@@ -871,7 +970,7 @@ function finishDeck(){
   // written down once: a refresh on the results screen calls this again
   if(!state.logged){
     state.logged = true;
-    recordSession("cards", wordsLabel(state.deck), total, state.known.size);
+    finishSession(state.historyId, wordsLabel(state.deck), total, state.known.size);
   }
   $("#doneTitle").textContent = "";
   $("#doneSub").textContent = "";
@@ -1026,11 +1125,14 @@ function mergeHistory(cloudRows){
   const local = loadLocalHistory().map(r => ({
     at: r.at, site: "vocab", kind: r.kind, title: r.title,
     total: r.total || 0, known: r.known || 0,
+    done: r.done !== false, id: r.id || "", canResume: !!(r.resume && r.id),
   }));
-  // the kanji site inserts its rows without an `app`, ours are stamped "vocab"
+  // the kanji site inserts its rows without an `app`, ours are stamped "vocab".
+  // Anything that reached the cloud is by definition a session that finished.
   const remote = (cloudRows || []).map(r => ({
     at: r.created_at, site: r.app === "vocab" ? "vocab" : "kanji", kind: null,
     title: r.set_name || "", total: r.total || 0, known: r.known || 0,
+    done: true, id: "", canResume: false,
   }));
 
   const seen = new Set();
@@ -1038,7 +1140,7 @@ function mergeHistory(cloudRows){
   for(const r of [...local, ...remote]){
     const when = new Date(r.at).getTime();
     if(!when) continue;
-    const key = [r.site, r.title, r.total, r.known, Math.floor(when / 60000)].join("|");
+    const key = [r.site, r.done, r.title, r.total, r.known, Math.floor(when / 60000)].join("|");
     if(seen.has(key)) continue;
     seen.add(key);
     rows.push(r);
@@ -1052,16 +1154,23 @@ function historyRowHTML(r){
     { hour: "2-digit", minute: "2-digit", hour12: false });
   const what = r.kind === "quiz" ? t("quiz_btn") : r.kind === "cards" ? t("flashcards") : "";
   const site = r.site === "kanji" ? t("site_kanji") : t("site_vocab");
-  return `<li class="hist-row">
+  const sub = [time, what, r.done ? "" : t("history_unfinished")].filter(Boolean).join(" · ");
+  /* A session you can pick up again is the whole row, not a button squeezed
+     into it: a bigger target, and one less style competing with the diamonds
+     the rest of the app is built from. */
+  const open = r.canResume;
+  return `<li class="hist-row${r.done ? "" : " hist-row--open"}"
+    ${open ? `data-resume="${escHtml(r.id)}" role="button" tabindex="0"` : ""}>
     <span class="hist-row__site hist-row__site--${r.site}">${site}</span>
     <div class="hist-row__body">
       <p class="hist-row__title">${escHtml(r.title) || site}</p>
-      <p class="hist-row__sub">${time}${what ? " · " + what : ""}</p>
+      <p class="hist-row__sub">${sub}</p>
     </div>
     <div class="hist-row__score">
       <span class="hist-row__count">${r.known}/${r.total}</span>
       <span class="hist-bar"><i style="width:${pct}%"></i></span>
     </div>
+    ${open ? `<span class="hist-row__go">${t("history_continue")} →</span>` : ""}
   </li>`;
 }
 
@@ -1088,6 +1197,13 @@ function paintHistory(rows, signedIn){
     html += historyRowHTML(r);
   });
   box.innerHTML = html + "</ul>";
+  $$("#historyList [data-resume]").forEach(row => {
+    const open = () => { if(!resumeSession(row.dataset.resume)) toast(t("history_gone")); };
+    row.addEventListener("click", open);
+    row.addEventListener("keydown", e => {
+      if(e.key === "Enter" || e.key === " "){ e.preventDefault(); open(); }
+    });
+  });
 }
 
 /* Draw what we have straight away, then fill the account's sessions in when
@@ -1112,7 +1228,7 @@ window.historyChanged = function(){
    on top, four meanings below, one of them right. Nothing is written back to
    the deck — a game shouldn't decide what you "know". */
 const quiz = { items: [], pool: [], index: 0, score: 0, wrong: [], locked: false,
-               rounds: [], view: 0, logged: false };
+               rounds: [], view: 0, logged: false, historyId: "" };
 
 const quizMeaning = (w) => (w[state.lang] || w.en || "").trim();
 
@@ -1149,6 +1265,7 @@ function startQuiz(words, decoyFrom){
   quiz.pool = pool;
   quiz.index = 0; quiz.score = 0; quiz.wrong = []; quiz.locked = false;
   quiz.rounds = []; quiz.view = 0; quiz.logged = false;
+  quiz.historyId = newSession("quiz", wordsLabel(quiz.items), quiz.items.length);
   $("#quizDone").hidden = true;
   $("#quizPlay").hidden = false;
   go("quiz");
@@ -1266,7 +1383,7 @@ function finishQuiz(){
   // once per game, not once per refresh of the results screen
   if(!quiz.logged){
     quiz.logged = true;
-    recordSession("quiz", wordsLabel(quiz.items), total, quiz.score);
+    finishSession(quiz.historyId, wordsLabel(quiz.items), total, quiz.score);
   }
   const graphic = $("#quizGraphic");
   if(missed === 0){
@@ -1320,6 +1437,7 @@ function restoreSession(){
   state.review = new Set(session.review || []);
   state.deckTitle = session.deckTitle || t("flashcards");
   state.logged = !!session.logged;
+  state.historyId = session.historyId || "";
   $("#deckTitle").textContent = state.deckTitle;
   document.body.dataset.view = "cards";
 

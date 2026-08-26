@@ -148,6 +148,21 @@ body[data-view="quiz"]    .view--quiz{display:block}
   background:var(--line);overflow:hidden}
 .hist-bar > i{display:block;height:100%;background:var(--primary);
   transition:width .3s ease}
+/* A session you walked away from: dashed, and the whole row takes you back
+   into it. */
+.hist-row--open{border-style:dashed}
+.hist-row--open .hist-bar > i{background:var(--ink-soft)}
+.hist-row[data-resume]{cursor:pointer;transition:border-color .2s ease, background .2s ease}
+.hist-row[data-resume]:hover,.hist-row[data-resume]:focus-visible{
+  border-color:var(--ink);background:var(--surface-2);outline:none}
+.hist-row[data-resume]:active{background:var(--surface-2)}
+.hist-row__go{flex:none;font-size:14px;color:var(--ink);white-space:nowrap}
+@media(max-width:420px){
+  /* at phone width "continue" needs its own line, or the title is squeezed
+     down to a couple of characters */
+  .hist-row{flex-wrap:wrap}
+  .hist-row__go{width:100%;text-align:right;margin-top:4px}
+}
 
 /* ===== Quiz: the word, then the meanings to choose from ===== */
 .quiz-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);
